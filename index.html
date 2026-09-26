@@ -8,7 +8,9 @@
 
 <!-- PWA / iOS home screen -->
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#fff3e0">
+<meta name="theme-color" content="#fff8ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1b16" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ABC">
@@ -45,11 +47,14 @@
 
 <!-- ===================== LETTRES (frappe libre) ===================== -->
 <section id="screen-lettres" class="screen ecran-actif-masque" aria-label="Lettres">
-  <button type="button" class="btn-maison" data-home>🏠</button>
+  <button type="button" class="btn-nav btn-maison" data-home aria-label="Retour au menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
 
   <div class="lettres-zone">
     <div class="lettre-geante" id="lettre-geante" aria-live="polite"></div>
-    <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
+    <div class="bande-ligne">
+      <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
+      <button type="button" class="btn-lire" id="btn-lire" aria-label="Lire ce qui est tapé">🔊</button>
+    </div>
     <div class="mot-trouve" id="mot-trouve-lettres" aria-live="polite"></div>
   </div>
 
@@ -58,8 +63,8 @@
 
 <!-- ===================== MOTS (copier un mot) ===================== -->
 <section id="screen-mots" class="screen ecran-actif-masque" aria-label="Mots">
-  <button type="button" class="btn-maison" data-home>🏠</button>
-  <button type="button" class="btn-suivant" id="btn-mot-suivant" aria-label="Mot suivant">➡️</button>
+  <button type="button" class="btn-nav btn-maison" data-home aria-label="Retour au menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button type="button" class="btn-nav btn-suivant" id="btn-mot-suivant" aria-label="Mot suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
 
   <div class="mots-zone">
     <button type="button" class="mot-emoji" id="mot-emoji" aria-label="Écouter le mot"></button>
@@ -84,6 +89,18 @@
       <label class="choix-radio">
         <input type="radio" name="mode-lettre" value="nom" id="radio-nom">
         <span>Leur nom (esse)</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="groupe-reglage">
+      <legend>Lire ce qui est tapé (écran Lettres) :</legend>
+      <label class="choix-radio">
+        <input type="radio" name="mode-lecture" value="auto" id="radio-lecture-auto">
+        <span>Après chaque lettre</span>
+      </label>
+      <label class="choix-radio">
+        <input type="radio" name="mode-lecture" value="bouton" id="radio-lecture-bouton">
+        <span>Seulement avec 🔊</span>
       </label>
     </fieldset>
 
