@@ -8,7 +8,7 @@ window.MOTS = [
   { mot: "LÉO", emoji: "👦", famille: true },
   { mot: "PAPA", emoji: "👨", famille: true },
   { mot: "MAMAN", emoji: "👩", famille: true },
-  { mot: "BURCKHARDT", emoji: "🏡", famille: true },
+  { mot: "BURCKHARDT", emoji: "👨‍👩‍👦", famille: true },
 
   // Animaux
   { mot: "CHAT", emoji: "🐱" },
@@ -45,7 +45,7 @@ window.MOTS = [
   // À manger
   { mot: "RIZ", emoji: "🍚" },
   { mot: "BOL", emoji: "🥣" },
-  { mot: "PAIN", emoji: "🍞" },
+  { mot: "PAIN", emoji: "🥖" },
   { mot: "LAIT", emoji: "🥛" },
   { mot: "POMME", emoji: "🍎" },
   { mot: "POIRE", emoji: "🍐" },
@@ -63,8 +63,7 @@ window.MOTS = [
   { mot: "FEU", emoji: "🔥" },
   { mot: "EAU", emoji: "💧" },
   { mot: "LUNE", emoji: "🌙" },
-  { mot: "NUIT", emoji: "🌃" },
-  { mot: "FLEUR", emoji: "🌸" },
+  { mot: "FLEUR", emoji: "🌷" },
   { mot: "ARBRE", emoji: "🌳" },
   { mot: "SOLEIL", emoji: "☀️" },
   { mot: "ÉTOILE", emoji: "⭐" },
@@ -84,5 +83,4 @@ window.MOTS = [
   { mot: "BALLON", emoji: "🎈" },
   { mot: "MAISON", emoji: "🏠" },
   { mot: "CADEAU", emoji: "🎁" },
-  { mot: "PIRATE", emoji: "🏴‍☠️" },
 ];

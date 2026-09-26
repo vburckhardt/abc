@@ -7,8 +7,8 @@ d'accueil), utilisable aussi sur ordinateur avec un vrai clavier.
 
 - **Lettres** : clavier A–Z ; chaque lettre s'affiche en grand et dit son
   nom. Si ce qui est tapé se termine par une syllabe valide (« MA »,
-  « CHA », « BRA »…), la voix de l'appareil la lit (après une petite pause,
-  ou avec 🔊) ; sinon rien n'est lu. Un mot de la liste tapé en entier est
+  « CHA », « BRA »…), la voix de l'appareil la lit après une petite
+  pause ; sinon rien n'est lu. Un mot de la liste tapé en entier est
   reconnu (image + mot).
 - **Mots** : une image et un mot à recopier ; la touche suivante brille,
   chaque bonne lettre dit son nom, le mot est lu à la fin.
