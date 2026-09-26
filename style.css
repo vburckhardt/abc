@@ -533,3 +533,16 @@ a { color: inherit; }
   pointer-events: none;
 }
 .version-app.a-jour-non { color: var(--orange); opacity: 1; font-weight: 700; }
+
+/* Réglages : test de la voix */
+.btn-tester-voix {
+  display: block;
+  margin: 8px 4px 4px;
+  padding: 10px 14px;
+  background: var(--carte);
+  border: 2px solid var(--creme-fonce);
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 16px;
+}
+.etat-voix { margin: 6px 4px 0; font-size: 13px; opacity: 0.75; }
