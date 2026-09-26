@@ -52,6 +52,20 @@ voix. Les consonnes continues (f, j, l, m, n, r, s, v, z) sont extraites
 d'un « a-sss-a » puis allongées, parce que la voix ne sait pas bien dire
 un son isolé.
 
+## Lire ce qui est tapé
+
+Sur l'écran Lettres, la suite de lettres tapée est lue par la voix de
+l'iPhone (hors ligne) après une petite pause, ou en touchant 🔊. Réglage :
+« Après chaque lettre » ou « Seulement avec 🔊 ». Les mots de la liste sont
+lus avec leur enregistrement.
+
+## Choisir les sons des lettres
+
+`ecoute.html` (ex. `https://vburckhardt.github.io/abc/ecoute.html`) propose
+plusieurs versions de chaque son (générées par `tools/variantes.py`) et la
+voix de l'iPhone. Choisissez, copiez le résumé, puis recopiez la version
+retenue dans `audio/sons/<lettre>.mp3`.
+
 ## Fichiers
 
 - `index.html`, `style.css`, `app.js` — l'application

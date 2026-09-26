@@ -35,6 +35,7 @@
   // ----------------------------------------------------------------
   var REGLAGES_DEFAUT = {
     modeLettre: "son", // "son" | "nom"
+    lectureAuto: true, // lire la bande de lettres après chaque lettre
     categories: { courts: true, moyens: false, longs: false, famille: true },
     sonActif: true
   };
@@ -48,6 +49,7 @@
       var parse = JSON.parse(brut);
       return {
         modeLettre: parse.modeLettre === "nom" ? "nom" : "son",
+        lectureAuto: parse.lectureAuto !== false,
         categories: Object.assign(clone(REGLAGES_DEFAUT.categories), parse.categories || {}),
         sonActif: parse.sonActif !== false
       };
@@ -141,6 +143,7 @@
     if (l.length !== 1 || l < "a" || l > "z") return;
     var dossier = reglages.modeLettre === "nom" ? "noms" : "sons";
     var chemin = "./audio/" + dossier + "/" + l + ".mp3";
+    if (synthese) synthese.cancel(); // coupe une lecture de mot en cours
     if (enCoursLettre) {
       try { enCoursLettre.stop(0); } catch (e) {}
       enCoursLettre = null;
@@ -219,6 +222,50 @@
     jouerTon(180, 90, 0.22, "sine");
   }
 
+  // ------------------------------------------------------------------
+  // Voix de l'appareil (speechSynthesis) pour lire n'importe quelle suite
+  // de lettres tapée. Les voix françaises d'iOS fonctionnent hors ligne.
+  // ------------------------------------------------------------------
+  var synthese = window.speechSynthesis || null;
+  var voixFr = null;
+
+  function choisirVoixFr() {
+    if (!synthese) return;
+    var voix = synthese.getVoices().filter(function (v) {
+      return /^fr/i.test(v.lang);
+    });
+    // Préférence : fr-FR, installée localement (hors ligne).
+    voix.sort(function (a, b) {
+      var sa = (/fr[-_]FR/i.test(a.lang) ? 2 : 0) + (a.localService ? 1 : 0);
+      var sb = (/fr[-_]FR/i.test(b.lang) ? 2 : 0) + (b.localService ? 1 : 0);
+      return sb - sa;
+    });
+    voixFr = voix[0] || null;
+  }
+  if (synthese) {
+    choisirVoixFr();
+    if ("onvoiceschanged" in synthese) synthese.onvoiceschanged = choisirVoixFr;
+  }
+
+  function dire(texte) {
+    if (!synthese || !reglages.sonActif || !texte) return;
+    synthese.cancel();
+    // En minuscules, sinon « CHAT » peut être épelé comme un sigle.
+    var u = new SpeechSynthesisUtterance(texte.toLowerCase());
+    u.lang = "fr-FR";
+    if (voixFr) u.voice = voixFr;
+    u.rate = 0.8;
+    synthese.speak(u);
+  }
+
+  // iOS n'autorise la synthèse vocale qu'après un premier appel pendant un geste.
+  function debloquerSynthese() {
+    if (!synthese) return;
+    var u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    synthese.speak(u);
+  }
+
   // Déblocage sur premier geste utilisateur.
   var debloqueDeja = false;
   // On relance le contexte à chaque geste : iOS le suspend quand l'app
@@ -227,6 +274,7 @@
     debloquerAudio();
     if (debloqueDeja) return;
     debloqueDeja = true;
+    debloquerSynthese();
     precharger26Lettres();
   }
   window.addEventListener("pointerdown", surPremierGeste, { once: false, passive: true });
@@ -321,6 +369,8 @@
   function remplirFormulaireReglages() {
     document.getElementById("radio-son").checked = reglages.modeLettre === "son";
     document.getElementById("radio-nom").checked = reglages.modeLettre === "nom";
+    document.getElementById("radio-lecture-auto").checked = reglages.lectureAuto;
+    document.getElementById("radio-lecture-bouton").checked = !reglages.lectureAuto;
     document.getElementById("cat-courts").checked = !!reglages.categories.courts;
     document.getElementById("cat-moyens").checked = !!reglages.categories.moyens;
     document.getElementById("cat-longs").checked = !!reglages.categories.longs;
@@ -334,6 +384,15 @@
   });
   document.getElementById("radio-nom").addEventListener("change", function () {
     reglages.modeLettre = "nom";
+    sauverReglages();
+  });
+
+  document.getElementById("radio-lecture-auto").addEventListener("change", function () {
+    reglages.lectureAuto = true;
+    sauverReglages();
+  });
+  document.getElementById("radio-lecture-bouton").addEventListener("change", function () {
+    reglages.lectureAuto = false;
     sauverReglages();
   });
 
@@ -413,10 +472,35 @@
   var motTrouveEl = document.getElementById("mot-trouve-lettres");
   var bandeLettres = ""; // chaîne des dernières lettres tapées (max ~12)
   var MAX_BANDE = 12;
+  var timerLecture = null; // lecture de la bande après une petite pause
+  var DELAI_LECTURE = 900; // ms sans frappe avant de lire (laisse finir le son de la lettre)
+  var btnLire = document.getElementById("btn-lire");
+
+  function lireBande() {
+    clearTimeout(timerLecture);
+    if (!bandeLettres) return;
+    btnLire.classList.remove("parle");
+    void btnLire.offsetWidth;
+    btnLire.classList.add("parle");
+    dire(bandeLettres);
+  }
+
+  function programmerLecture() {
+    clearTimeout(timerLecture);
+    if (!reglages.lectureAuto || bandeLettres.length < 2) return;
+    timerLecture = setTimeout(lireBande, DELAI_LECTURE);
+  }
+
+  btnLire.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    lireBande();
+  });
+  bandeLettresEl.addEventListener("pointerdown", lireBande);
 
   var COULEURS = ["#ff6f9c", "#4ea8de", "#67c96e", "#ffca3a", "#9d7bff", "#ff8a3d", "#2ec4b6", "#e8555a"];
 
   function resetLettresEcran() {
+    clearTimeout(timerLecture);
     bandeLettres = "";
     bandeLettresEl.textContent = "";
     lettreGeanteEl.textContent = "";
@@ -428,6 +512,7 @@
     if (l === "BACKSPACE") {
       bandeLettres = bandeLettres.slice(0, -1);
       bandeLettresEl.textContent = bandeLettres;
+      programmerLecture();
       return;
     }
     // Affichage géant avec couleur aléatoire + animation pop.
@@ -446,7 +531,9 @@
     }
     bandeLettresEl.textContent = bandeLettres;
 
-    verifierMotDansBande();
+    // Un mot connu est lu avec le vrai enregistrement ; sinon on lit la
+    // bande avec la voix de l'appareil après une petite pause.
+    if (!verifierMotDansBande()) programmerLecture();
   }
 
   function verifierMotDansBande() {
@@ -459,12 +546,14 @@
       if (motPlat.length > venteBande.length) continue;
       if (venteBande.slice(venteBande.length - motPlat.length) === motPlat) {
         afficherMotTrouve(entree);
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   function afficherMotTrouve(entree) {
+    clearTimeout(timerLecture);
     motTrouveEl.innerHTML =
       '<span class="emoji">' + entree.emoji + "</span><span>" + entree.mot + "</span>";
     motTrouveEl.classList.remove("affiche");

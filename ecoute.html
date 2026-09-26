@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choisir les sons</title>
+<style>
+  :root { --creme: #fff8ec; --encre: #4a3c2f; --ombre: rgba(74,60,47,.18); --orange: #ff8a3d; --vert: #67c96e; }
+  body { margin: 0; background: var(--creme); color: var(--encre);
+    font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif; padding: 16px; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: var(--orange); }
+  p { margin: 4px 0 12px; font-size: 15px; line-height: 1.4; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .carte { background: white; border-radius: 14px; box-shadow: 0 3px 0 var(--ombre); padding: 10px; }
+  .lettre { font-size: 34px; font-weight: 900; text-align: center; }
+  .rangee { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+  button { font: inherit; font-weight: 800; font-size: 17px; border: 2px solid #eee2cc; background: #fffdf8;
+    border-radius: 10px; min-width: 34px; height: 38px; color: var(--encre); }
+  button.choisi { background: var(--vert); border-color: var(--vert); color: white; }
+  .petit { font-size: 12px; text-align: center; opacity: .7; margin-top: 4px; }
+  #resume { position: sticky; bottom: 0; background: var(--creme); padding: 12px 0 4px; margin-top: 12px; }
+  #texte { width: 100%; box-sizing: border-box; font: 15px ui-monospace, monospace; padding: 8px; border-radius: 10px; border: 2px solid #eee2cc; }
+</style>
+</head>
+<body>
+<h1>Choisir le son de chaque lettre</h1>
+<p>Touchez <b>1</b>, <b>2</b>, <b>3</b> pour écouter les versions enregistrées et <b>📱</b> pour la voix de l'iPhone.
+Touchez <b>✓</b> sous la version que vous préférez. Ensuite, copiez le texte en bas et envoyez-le à Claude.</p>
+<div class="grille" id="grille"></div>
+<div id="resume">
+  <textarea id="texte" rows="2" readonly></textarea>
+</div>
+<script>
+  // Texte donné à la voix de l'iPhone pour la version 📱.
+  var TEXTE_IPHONE = { a:"a", b:"beu", c:"keu", d:"deu", e:"eu", f:"fff", g:"gueu", h:"hache", i:"i",
+    j:"jjj", k:"keu", l:"lll", m:"mmm", n:"nnn", o:"o", p:"peu", q:"keu", r:"rrr", s:"sss", t:"teu",
+    u:"u", v:"vvv", w:"double vé", x:"ksss", y:"i", z:"zzz" };
+  var VERSIONS = ["1", "2", "3", "📱"];
+  var choix = {};
+  try { choix = JSON.parse(localStorage.getItem("abc-choix-sons") || "{}"); } catch (e) {}
+
+  var audio = new Audio();
+  function jouer(l, v) {
+    if (v === "📱") {
+      if (!window.speechSynthesis) return;
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(TEXTE_IPHONE[l]);
+      u.lang = "fr-FR"; u.rate = 0.8;
+      speechSynthesis.speak(u);
+      return;
+    }
+    audio.pause();
+    audio = new Audio("audio/essai/" + l + "-" + v + ".mp3");
+    audio.play().catch(function () {});
+  }
+
+  function majResume() {
+    var t = "abcdefghijklmnopqrstuvwxyz".split("").map(function (l) {
+      return l.toUpperCase() + ":" + (choix[l] || "?");
+    }).join(" ");
+    document.getElementById("texte").value = t;
+    try { localStorage.setItem("abc-choix-sons", JSON.stringify(choix)); } catch (e) {}
+  }
+
+  var grille = document.getElementById("grille");
+  "abcdefghijklmnopqrstuvwxyz".split("").forEach(function (l) {
+    var carte = document.createElement("div");
+    carte.className = "carte";
+    carte.innerHTML = '<div class="lettre">' + l.toUpperCase() + '</div>';
+    var ecoute = document.createElement("div"); ecoute.className = "rangee";
+    var vote = document.createElement("div"); vote.className = "rangee";
+    VERSIONS.forEach(function (v) {
+      var b = document.createElement("button");
+      b.textContent = v;
+      b.onclick = function () { jouer(l, v); };
+      ecoute.appendChild(b);
+      var c = document.createElement("button");
+      c.textContent = "✓";
+      c.className = choix[l] === v ? "choisi" : "";
+      c.onclick = function () {
+        choix[l] = v;
+        Array.prototype.forEach.call(vote.children, function (x) { x.className = ""; });
+        c.className = "choisi";
+        majResume();
+      };
+      vote.appendChild(c);
+    });
+    carte.appendChild(ecoute);
+    carte.appendChild(vote);
+    grille.appendChild(carte);
+  });
+  document.getElementById("texte").onclick = function () { this.select(); };
+  majResume();
+</script>
+</body>
+</html>

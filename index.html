@@ -49,7 +49,10 @@
 
   <div class="lettres-zone">
     <div class="lettre-geante" id="lettre-geante" aria-live="polite"></div>
-    <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
+    <div class="bande-ligne">
+      <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
+      <button type="button" class="btn-lire" id="btn-lire" aria-label="Lire ce qui est tapé">🔊</button>
+    </div>
     <div class="mot-trouve" id="mot-trouve-lettres" aria-live="polite"></div>
   </div>
 
@@ -84,6 +87,18 @@
       <label class="choix-radio">
         <input type="radio" name="mode-lettre" value="nom" id="radio-nom">
         <span>Leur nom (esse)</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="groupe-reglage">
+      <legend>Lire ce qui est tapé (écran Lettres) :</legend>
+      <label class="choix-radio">
+        <input type="radio" name="mode-lecture" value="auto" id="radio-lecture-auto">
+        <span>Après chaque lettre</span>
+      </label>
+      <label class="choix-radio">
+        <input type="radio" name="mode-lecture" value="bouton" id="radio-lecture-bouton">
+        <span>Seulement avec 🔊</span>
       </label>
     </fieldset>
 
