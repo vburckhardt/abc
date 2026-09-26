@@ -29,6 +29,8 @@
   }
 
   var MOTS = window.MOTS || [];
+  // Syllabes valides (« ma », « cha », « bra »…), voir syllabes.js.
+  var SYLLABES = new Set(window.SYLLABES || []);
 
   // ----------------------------------------------------------------
   // Réglages (localStorage, avec valeurs par défaut si indisponible)
@@ -589,26 +591,42 @@
   var DELAI_LECTURE = 900; // ms sans frappe avant de lire (laisse finir le son de la lettre)
   var btnLire = document.getElementById("btn-lire");
 
-  function lireBande() {
+  // On ne lit que du vrai : la syllabe valide qui termine ce qui est tapé
+  // (3 lettres d'abord, puis 2 : « XQCHA » -> « cha », « BLMA » -> « ma »).
+  // Les suites sans syllabe ne sont pas lues ; chaque lettre a déjà dit
+  // son nom. Les mots de la liste sont gérés à part (image + mot).
+  function syllabeFinale() {
+    for (var n = 3; n >= 2; n--) {
+      if (bandeLettres.length < n) continue;
+      var s = bandeLettres.slice(-n).toLowerCase();
+      if (SYLLABES.has(s)) return s;
+    }
+    return null;
+  }
+
+  // parBouton : 🔊 touché. Sans syllabe, on redit alors la dernière lettre.
+  function lireBande(parBouton) {
     clearTimeout(timerLecture);
     if (!bandeLettres) return;
     btnLire.classList.remove("parle");
     void btnLire.offsetWidth;
     btnLire.classList.add("parle");
-    dire(bandeLettres);
+    var syllabe = syllabeFinale();
+    if (syllabe) dire(syllabe);
+    else if (parBouton === true) jouerLettre(bandeLettres.slice(-1));
   }
 
   function programmerLecture() {
     clearTimeout(timerLecture);
-    if (!reglages.lectureAuto || bandeLettres.length < 2) return;
+    if (!reglages.lectureAuto || !syllabeFinale()) return;
     timerLecture = setTimeout(lireBande, DELAI_LECTURE);
   }
 
   btnLire.addEventListener("pointerdown", function (e) {
     e.preventDefault();
-    lireBande();
+    lireBande(true);
   });
-  bandeLettresEl.addEventListener("pointerdown", lireBande);
+  bandeLettresEl.addEventListener("pointerdown", function () { lireBande(true); });
 
   var COULEURS = ["#ff6f9c", "#4ea8de", "#67c96e", "#ffca3a", "#9d7bff", "#ff8a3d", "#2ec4b6", "#e8555a"];
 

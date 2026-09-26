@@ -14,6 +14,7 @@ const FICHIERS_APP = [
   "./style.css",
   "./app.js",
   "./words.js",
+  "./syllabes.js",
   "./enregistrements.js",
   "./enregistrer.html",
   "./enregistrer.js",
