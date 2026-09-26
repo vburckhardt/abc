@@ -33,8 +33,13 @@
   // ----------------------------------------------------------------
   // Réglages (localStorage, avec valeurs par défaut si indisponible)
   // ----------------------------------------------------------------
+  // Les sons syllabiques (« sss », « beu ») sont en pause le temps de les
+  // réenregistrer : le choix est caché et les lettres disent leur nom.
+  // Remettre à true pour réactiver le réglage « Leur son ».
+  var SONS_LETTRES_DISPONIBLES = false;
+
   var REGLAGES_DEFAUT = {
-    modeLettre: "son", // "son" | "nom"
+    modeLettre: SONS_LETTRES_DISPONIBLES ? "son" : "nom", // "son" | "nom"
     lectureAuto: true, // lire la bande de lettres après chaque lettre
     categories: { courts: true, moyens: false, longs: false, famille: true },
     sonActif: true
@@ -48,7 +53,7 @@
       if (!brut) return clone(REGLAGES_DEFAUT);
       var parse = JSON.parse(brut);
       return {
-        modeLettre: parse.modeLettre === "nom" ? "nom" : "son",
+        modeLettre: parse.modeLettre === "nom" || !SONS_LETTRES_DISPONIBLES ? "nom" : "son",
         lectureAuto: parse.lectureAuto !== false,
         categories: Object.assign(clone(REGLAGES_DEFAUT.categories), parse.categories || {}),
         sonActif: parse.sonActif !== false
@@ -206,12 +211,12 @@
   function precharger26Lettres() {
     for (var code = 97; code <= 122; code++) {
       var l = String.fromCharCode(code);
-      chargerBuffer("./audio/sons/" + l + ".mp3");
+      if (SONS_LETTRES_DISPONIBLES) chargerBuffer("./audio/sons/" + l + ".mp3");
       chargerBuffer("./audio/noms/" + l + ".mp3");
     }
   }
 
-  // Petits sons synthétisés (ding / bonk) via oscillateur, pas de fichier.
+  // Petit son synthétisé (bonk) via oscillateur, pas de fichier.
   function jouerTon(freqDepart, freqFin, duree, type) {
     if (!reglages.sonActif) return;
     var c = obtenirContexte();
@@ -230,10 +235,6 @@
       osc.start();
       osc.stop(c.currentTime + duree + 0.05);
     } catch (e) {}
-  }
-
-  function jouerDing() {
-    jouerTon(880, 1320, 0.18, "sine");
   }
 
   function jouerBonk() {
@@ -314,6 +315,9 @@
     mots: document.getElementById("screen-mots")
   };
   var overlayReglages = document.getElementById("overlay-reglages");
+  if (!SONS_LETTRES_DISPONIBLES) {
+    document.getElementById("groupe-mode-lettre").hidden = true;
+  }
 
   function afficherEcran(nom) {
     Object.keys(ecrans).forEach(function (k) {
@@ -677,7 +681,7 @@
     var attendue = lettrePlate(lettresMot[positionActuelle]);
     var boites = motBoitesEl.querySelectorAll(".boite-lettre");
     if (l === attendue) {
-      jouerDing();
+      jouerLettre(lettresMot[positionActuelle]); // dit le nom de la lettre
       var boite = boites[positionActuelle];
       boite.textContent = lettresMot[positionActuelle];
       boite.classList.remove("active");
@@ -686,9 +690,11 @@
       if (positionActuelle >= lettresMot.length) {
         // Mot complet !
         mettreAJourGlowClavier();
-        jouerSequenceMotBravo(motActuel.mot);
+        // Laisse finir le nom de la dernière lettre avant de lire le mot.
+        var motFini = motActuel.mot;
+        setTimeout(function () { jouerSequenceMotBravo(motFini); }, 700);
         lancerConfettis();
-        timerMotSuivant = setTimeout(demarrerNouveauMot, 2500);
+        timerMotSuivant = setTimeout(demarrerNouveauMot, 3200);
       } else {
         marquerBoiteActive();
         mettreAJourGlowClavier();

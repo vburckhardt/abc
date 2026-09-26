@@ -42,6 +42,12 @@ ressource externe : uniquement du HTML/CSS/JS "vanilla".
 
 ## Les sons des lettres (méthode syllabique)
 
+> **En pause :** pour l'instant les lettres disent leur **nom** partout (et
+> dans l'écran Mots, chaque bonne lettre dit son nom). Le réglage « Leur son »
+> est caché. Pour le réactiver (par ex. avec vos propres enregistrements dans
+> `audio/sons/<lettre>.mp3`), mettez `SONS_LETTRES_DISPONIBLES = true` dans
+> `app.js` et changez `VERSION` dans `sw.js`.
+
 Par défaut les lettres disent leur **son** (« sss », « mmm », « beu »).
 Les réglages (appui long 2 s sur ⚙️ en bas de l'accueil) permettent de
 passer au **nom** (« esse »). Le H ne fait pas de bruit : il dit son nom.
