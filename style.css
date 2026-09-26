@@ -1,0 +1,480 @@
+/* ===================== Base / kid-proofing ===================== */
+:root {
+  --creme: #fff8ec;
+  --creme-fonce: #ffe9c7;
+  --encre: #4a3c2f;
+  --orange: #ff8a3d;
+  --jaune: #ffca3a;
+  --vert: #67c96e;
+  --bleu: #4ea8de;
+  --rose: #ff6f9c;
+  --violet: #9d7bff;
+  --rouge-doux: #e8555a;
+  --ombre: rgba(74, 60, 47, 0.18);
+  --couleurs-lettres: #ff6f9c, #4ea8de, #67c96e, #ffca3a, #9d7bff, #ff8a3d, #2ec4b6, #e8555a;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--creme);
+  color: var(--encre);
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+a { color: inherit; }
+
+/* ===================== Screens ===================== */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.ecran-actif-masque {
+  display: none !important;
+}
+
+/* ===================== Accueil ===================== */
+#screen-home {
+  align-items: center;
+  justify-content: center;
+  gap: 6vh;
+  padding: 20px;
+  position: relative;
+}
+
+.titre-app {
+  font-size: clamp(28px, 6vw, 48px);
+  margin: 0;
+  color: var(--orange);
+  text-shadow: 2px 2px 0 var(--creme-fonce);
+}
+
+.accueil-boutons {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gros-bouton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: clamp(160px, 40vw, 260px);
+  height: clamp(160px, 40vw, 260px);
+  background: white;
+  border-radius: 36px;
+  box-shadow: 0 8px 0 var(--ombre), 0 10px 20px var(--ombre);
+  transition: transform 0.08s ease;
+}
+.gros-bouton:active {
+  transform: translateY(6px) scale(0.98);
+  box-shadow: 0 2px 0 var(--ombre);
+}
+
+.gros-emoji {
+  font-size: clamp(48px, 12vw, 90px);
+  line-height: 1;
+}
+
+.gros-label {
+  font-size: clamp(20px, 4vw, 32px);
+  font-weight: 800;
+}
+
+#btn-reglages {
+  position: absolute;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  right: max(14px, env(safe-area-inset-right));
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+}
+.reglages-icone {
+  font-size: 22px;
+  position: relative;
+  z-index: 1;
+}
+.anneau-appui {
+  position: absolute;
+  inset: 0;
+  width: 44px;
+  height: 44px;
+  transform: rotate(-90deg);
+}
+.anneau-fond {
+  fill: none;
+  stroke: var(--creme-fonce);
+  stroke-width: 3;
+}
+.anneau-progres {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 119;
+  stroke-dashoffset: 119;
+  transition: stroke-dashoffset 0.05s linear;
+}
+
+/* ===================== Bouton maison / suivant ===================== */
+.btn-maison {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 20;
+  font-size: 30px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ombre);
+}
+.btn-maison:active { transform: translateY(3px); box-shadow: none; }
+
+.btn-suivant {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 20;
+  font-size: 26px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--ombre);
+}
+.btn-suivant:active { transform: translateY(3px); box-shadow: none; }
+
+/* ===================== Lettres screen ===================== */
+#screen-lettres {
+  padding-top: 70px;
+}
+
+.lettres-zone {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  position: relative;
+}
+
+.lettre-geante {
+  font-size: 40vh;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--orange);
+  min-height: 20vh;
+  text-align: center;
+}
+
+.lettre-geante.pop {
+  animation: pop-lettre 0.28s ease;
+}
+@keyframes pop-lettre {
+  0% { transform: scale(0.3) rotate(-6deg); opacity: 0.2; }
+  60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.bande-lettres {
+  font-size: clamp(18px, 4vw, 30px);
+  font-weight: 700;
+  letter-spacing: 4px;
+  min-height: 1.5em;
+  color: var(--encre);
+  background: white;
+  padding: 6px 18px;
+  border-radius: 16px;
+  box-shadow: 0 3px 0 var(--ombre);
+}
+
+.bande-lettres:empty { visibility: hidden; }
+
+.mot-trouve {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(20px, 5vw, 34px);
+  font-weight: 800;
+  color: var(--vert);
+  min-height: 1.4em;
+}
+.mot-trouve .emoji { font-size: 1.4em; }
+.mot-trouve.affiche { animation: apparait 0.4s ease; }
+@keyframes apparait {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===================== Mots screen ===================== */
+#screen-mots {
+  padding-top: 70px;
+}
+
+.mots-zone {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3vh;
+  padding: 10px;
+}
+
+.mot-emoji {
+  font-size: clamp(60px, 20vh, 160px);
+  line-height: 1;
+}
+.mot-emoji.rebond { animation: rebond 0.4s ease; }
+@keyframes rebond {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.mot-boites {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 95vw;
+}
+
+.boite-lettre {
+  width: clamp(34px, 9vw, 62px);
+  height: clamp(40px, 10vw, 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 5vw, 38px);
+  font-weight: 900;
+  background: white;
+  border-radius: 12px;
+  border: 3px solid var(--creme-fonce);
+  color: var(--encre);
+}
+
+.boite-lettre.active {
+  border-color: var(--orange);
+  animation: pulse-boite 1s ease-in-out infinite;
+}
+@keyframes pulse-boite {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 138, 61, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 138, 61, 0); }
+}
+
+.boite-lettre.remplie {
+  background: var(--vert);
+  color: white;
+  border-color: var(--vert);
+}
+
+.boite-lettre.secoue {
+  animation: secousse 0.35s ease;
+}
+@keyframes secousse {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ===================== Clavier ===================== */
+.clavier {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  height: 42vh;
+}
+
+.touche {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font-size: clamp(16px, 3.4vh, 30px);
+  font-weight: 800;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--ombre);
+  color: var(--encre);
+}
+.touche:active,
+.touche.appuyee {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ombre);
+  background: var(--creme-fonce);
+}
+
+.touche.touche-efface {
+  grid-column: span 2;
+  background: var(--rouge-doux);
+  color: white;
+}
+
+.touche.glow {
+  background: var(--jaune);
+  box-shadow: 0 0 0 4px rgba(255, 202, 58, 0.6), 0 3px 0 var(--ombre);
+}
+
+/* Landscape / desktop: more columns, shorter keyboard */
+@media (orientation: landscape) {
+  .clavier {
+    grid-template-columns: repeat(9, 1fr);
+    height: 34vh;
+  }
+  .lettre-geante { font-size: 28vh; }
+}
+
+
+@media (min-width: 700px) {
+  .clavier {
+    grid-template-columns: repeat(9, 1fr);
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* ===================== Overlay réglages ===================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 60, 47, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.panneau-reglages {
+  background: var(--creme);
+  border-radius: 24px;
+  padding: 24px;
+  width: min(420px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.panneau-reglages h2 {
+  margin-top: 0;
+  color: var(--orange);
+}
+
+.btn-fermer {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 22px;
+}
+
+.groupe-reglage {
+  border: 2px solid var(--creme-fonce);
+  border-radius: 16px;
+  margin: 0 0 16px 0;
+  padding: 10px 14px 14px;
+}
+.groupe-reglage legend {
+  font-weight: 800;
+  padding: 0 6px;
+}
+
+.choix-radio, .choix-case {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  font-size: 17px;
+}
+.choix-radio input, .choix-case input {
+  width: 22px;
+  height: 22px;
+}
+
+/* ===================== Confettis ===================== */
+#confettis {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+.confetti {
+  position: absolute;
+  top: -20px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  animation: tombe linear forwards;
+}
+@keyframes tombe {
+  to {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0.9;
+  }
+}
+
+/* Téléphone en paysage : peu de hauteur, clavier sur 2 rangées. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .clavier {
+    grid-template-columns: repeat(14, 1fr);
+    grid-auto-rows: 1fr;
+    height: auto;
+    max-width: none;
+  }
+  .touche { min-height: 48px; }
+  .lettre-geante { font-size: 24vh; min-height: 0; }
+}

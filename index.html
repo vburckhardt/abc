@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>ABC de Léo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Apprendre les lettres et les mots en s'amusant">
+
+<!-- PWA / iOS home screen -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#fff3e0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ABC">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./icon-192.png">
+
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- ===================== ACCUEIL ===================== -->
+<section id="screen-home" class="screen" aria-label="Accueil">
+  <h1 class="titre-app">ABC de Léo</h1>
+  <div class="accueil-boutons">
+    <button type="button" class="gros-bouton" id="btn-go-lettres">
+      <span class="gros-emoji">🔤</span>
+      <span class="gros-label">Lettres</span>
+    </button>
+    <button type="button" class="gros-bouton" id="btn-go-mots">
+      <span class="gros-emoji">🐱</span>
+      <span class="gros-label">Mots</span>
+    </button>
+  </div>
+
+  <!-- Réglages cachés : appui long de 2 secondes -->
+  <button type="button" id="btn-reglages" aria-label="Réglages (appui long)">
+    <svg class="anneau-appui" viewBox="0 0 44 44" aria-hidden="true">
+      <circle class="anneau-fond" cx="22" cy="22" r="19"></circle>
+      <circle class="anneau-progres" id="anneau-progres" cx="22" cy="22" r="19"></circle>
+    </svg>
+    <span class="reglages-icone">⚙️</span>
+  </button>
+</section>
+
+<!-- ===================== LETTRES (frappe libre) ===================== -->
+<section id="screen-lettres" class="screen ecran-actif-masque" aria-label="Lettres">
+  <button type="button" class="btn-maison" data-home>🏠</button>
+
+  <div class="lettres-zone">
+    <div class="lettre-geante" id="lettre-geante" aria-live="polite"></div>
+    <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
+    <div class="mot-trouve" id="mot-trouve-lettres" aria-live="polite"></div>
+  </div>
+
+  <div class="clavier" id="clavier-lettres"></div>
+</section>
+
+<!-- ===================== MOTS (copier un mot) ===================== -->
+<section id="screen-mots" class="screen ecran-actif-masque" aria-label="Mots">
+  <button type="button" class="btn-maison" data-home>🏠</button>
+  <button type="button" class="btn-suivant" id="btn-mot-suivant" aria-label="Mot suivant">➡️</button>
+
+  <div class="mots-zone">
+    <button type="button" class="mot-emoji" id="mot-emoji" aria-label="Écouter le mot"></button>
+    <div class="mot-boites" id="mot-boites"></div>
+  </div>
+
+  <div class="clavier" id="clavier-mots"></div>
+</section>
+
+<!-- ===================== RÉGLAGES (overlay) ===================== -->
+<div id="overlay-reglages" class="overlay ecran-actif-masque" role="dialog" aria-label="Réglages">
+  <div class="panneau-reglages">
+    <button type="button" class="btn-fermer" id="btn-fermer-reglages" aria-label="Fermer">✖️</button>
+    <h2>Réglages</h2>
+
+    <fieldset class="groupe-reglage">
+      <legend>Les lettres disent :</legend>
+      <label class="choix-radio">
+        <input type="radio" name="mode-lettre" value="son" id="radio-son">
+        <span>Leur son (sss)</span>
+      </label>
+      <label class="choix-radio">
+        <input type="radio" name="mode-lettre" value="nom" id="radio-nom">
+        <span>Leur nom (esse)</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="groupe-reglage">
+      <legend>Catégories de mots :</legend>
+      <label class="choix-case">
+        <input type="checkbox" id="cat-courts" value="courts">
+        <span>Courts (3-4 lettres)</span>
+      </label>
+      <label class="choix-case">
+        <input type="checkbox" id="cat-moyens" value="moyens">
+        <span>Moyens (5-6 lettres)</span>
+      </label>
+      <label class="choix-case">
+        <input type="checkbox" id="cat-longs" value="longs">
+        <span>Longs (7+ lettres)</span>
+      </label>
+      <label class="choix-case">
+        <input type="checkbox" id="cat-famille" value="famille">
+        <span>Famille</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="groupe-reglage">
+      <legend>Son :</legend>
+      <label class="choix-case">
+        <input type="checkbox" id="son-actif" checked>
+        <span>Activé</span>
+      </label>
+    </fieldset>
+  </div>
+</div>
+
+<!-- Confettis / célébration -->
+<div id="confettis" aria-hidden="true"></div>
+
+<script src="./words.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
