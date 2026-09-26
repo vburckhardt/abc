@@ -226,7 +226,22 @@
   }
 
   // Joue le nom de la lettre (fichier ./audio/noms/<l>.mp3).
+  // Noms des lettres écrits pour la voix de l'appareil (une lettre seule
+  // peut être mal lue ; « bé », « esse »… se lisent comme du français).
+  var NOMS_LETTRES = {
+    a: "a", b: "bé", c: "cé", d: "dé", e: "eu", f: "effe", g: "gé",
+    h: "hache", i: "i", j: "ji", k: "ka", l: "elle", m: "emme", n: "enne",
+    o: "o", p: "pé", q: "ku", r: "erre", s: "esse", t: "té", u: "u",
+    v: "vé", w: "double vé", x: "ixe", y: "i grec", z: "zède"
+  };
+
+  // Dit le nom de la lettre avec la voix de l'appareil, comme les syllabes
+  // et les mots (une seule voix dans l'app). Fichier ./audio/noms/ en secours.
   function jouerLettreSecours(l) {
+    if (synthese) {
+      dire(NOMS_LETTRES[l]);
+      return;
+    }
     chargerBuffer("./audio/noms/" + l + ".mp3").then(function (buf) {
       enCoursLettre = jouerBuffer(buf);
     });
@@ -274,6 +289,7 @@
 
   function jouerBravo() {
     if (!reglages.sonActif) return Promise.resolve();
+    if (synthese) return dire("Bravo !");
     return chargerBuffer("./audio/bravo.mp3").then(function (buf) {
       var src = jouerBuffer(buf);
       if (!src || !buf) return Promise.resolve();
@@ -293,7 +309,7 @@
     for (var code = 97; code <= 122; code++) {
       var l = String.fromCharCode(code);
       if (SONS_LETTRES_DISPONIBLES) chargerBuffer("./audio/sons/" + l + ".mp3");
-      chargerBuffer("./audio/noms/" + l + ".mp3");
+      if (!synthese) chargerBuffer("./audio/noms/" + l + ".mp3");
     }
   }
 

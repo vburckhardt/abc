@@ -39,7 +39,9 @@ appareils gardent l'ancienne version.
   devient « mai »). Les mots listés dans `MOTS_ENREGISTRES` (`app.js`),
   par exemple des noms propres mal lus par l'appareil, gardent leur fichier
   `audio/mots/<id>.mp3`. Ces fichiers servent aussi de secours.
-- **Noms des lettres** : `audio/noms/<lettre>.mp3` (Piper).
+- **Noms des lettres et « Bravo ! »** : aussi la voix de l'appareil, avec
+  les noms écrits en toutes lettres (`NOMS_LETTRES` dans `app.js` : « bé »,
+  « esse »…). `audio/noms/` et `audio/bravo.mp3` (Piper) servent de secours.
 - **Sons des lettres** (« sss », « mmm », « beu ») : les sons générés
   (`audio/sons/`) ne sont pas assez bons, ils sont désactivés
   (`SONS_LETTRES_DISPONIBLES = false` dans `app.js`).
