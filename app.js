@@ -29,6 +29,8 @@
   }
 
   var MOTS = window.MOTS || [];
+  // Syllabes valides (« ma », « cha », « bra »…), voir syllabes.js.
+  var SYLLABES = new Set(window.SYLLABES || []);
 
   // ----------------------------------------------------------------
   // Réglages (localStorage, avec valeurs par défaut si indisponible)
@@ -52,7 +54,6 @@
 
   var REGLAGES_DEFAUT = {
     modeLettre: SONS_LETTRES_DISPONIBLES ? "son" : "nom", // "son" | "nom"
-    lectureAuto: true, // lire la bande de lettres après chaque lettre
     categories: { courts: true, moyens: false, longs: false, famille: true },
     sonActif: true
   };
@@ -66,7 +67,6 @@
       var parse = JSON.parse(brut);
       return {
         modeLettre: parse.modeLettre === "son" && sonsDisponibles() ? "son" : "nom",
-        lectureAuto: parse.lectureAuto !== false,
         categories: Object.assign(clone(REGLAGES_DEFAUT.categories), parse.categories || {}),
         sonActif: parse.sonActif !== false
       };
@@ -482,8 +482,6 @@
   function remplirFormulaireReglages() {
     document.getElementById("radio-son").checked = reglages.modeLettre === "son";
     document.getElementById("radio-nom").checked = reglages.modeLettre === "nom";
-    document.getElementById("radio-lecture-auto").checked = reglages.lectureAuto;
-    document.getElementById("radio-lecture-bouton").checked = !reglages.lectureAuto;
     document.getElementById("cat-courts").checked = !!reglages.categories.courts;
     document.getElementById("cat-moyens").checked = !!reglages.categories.moyens;
     document.getElementById("cat-longs").checked = !!reglages.categories.longs;
@@ -500,14 +498,6 @@
     sauverReglages();
   });
 
-  document.getElementById("radio-lecture-auto").addEventListener("change", function () {
-    reglages.lectureAuto = true;
-    sauverReglages();
-  });
-  document.getElementById("radio-lecture-bouton").addEventListener("change", function () {
-    reglages.lectureAuto = false;
-    sauverReglages();
-  });
 
   function surChangementCategorie() {
     var c = {
@@ -587,28 +577,36 @@
   var MAX_BANDE = 12;
   var timerLecture = null; // lecture de la bande après une petite pause
   var DELAI_LECTURE = 900; // ms sans frappe avant de lire (laisse finir le son de la lettre)
-  var btnLire = document.getElementById("btn-lire");
+
+  // On ne lit que du vrai : la syllabe valide qui termine ce qui est tapé
+  // (3 lettres d'abord, puis 2 : « XQCHA » -> « cha », « BLMA » -> « ma »).
+  // Les suites sans syllabe ne sont pas lues ; chaque lettre a déjà dit
+  // son nom. Les mots de la liste sont gérés à part (image + mot).
+  function syllabeFinale() {
+    for (var n = 3; n >= 2; n--) {
+      if (bandeLettres.length < n) continue;
+      var s = bandeLettres.slice(-n).toLowerCase();
+      if (SYLLABES.has(s)) return s;
+    }
+    return null;
+  }
 
   function lireBande() {
     clearTimeout(timerLecture);
-    if (!bandeLettres) return;
-    btnLire.classList.remove("parle");
-    void btnLire.offsetWidth;
-    btnLire.classList.add("parle");
-    dire(bandeLettres);
+    var syllabe = syllabeFinale();
+    if (!syllabe) return;
+    // La bande sautille pendant la lecture.
+    bandeLettresEl.classList.remove("parle");
+    void bandeLettresEl.offsetWidth;
+    bandeLettresEl.classList.add("parle");
+    dire(syllabe);
   }
 
   function programmerLecture() {
     clearTimeout(timerLecture);
-    if (!reglages.lectureAuto || bandeLettres.length < 2) return;
+    if (!syllabeFinale()) return;
     timerLecture = setTimeout(lireBande, DELAI_LECTURE);
   }
-
-  btnLire.addEventListener("pointerdown", function (e) {
-    e.preventDefault();
-    lireBande();
-  });
-  bandeLettresEl.addEventListener("pointerdown", lireBande);
 
   var COULEURS = ["#ff6f9c", "#4ea8de", "#67c96e", "#ffca3a", "#9d7bff", "#ff8a3d", "#2ec4b6", "#e8555a"];
 

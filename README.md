@@ -6,8 +6,10 @@ ressource externe : du HTML/CSS/JS simple. Faite pour l'iPhone (écran
 d'accueil), utilisable aussi sur ordinateur avec un vrai clavier.
 
 - **Lettres** : clavier A–Z ; chaque lettre s'affiche en grand et dit son
-  nom. Ce qui est tapé est lu par la voix de l'appareil (après une petite
-  pause, ou avec 🔊). Un mot de la liste tapé en entier est reconnu.
+  nom. Si ce qui est tapé se termine par une syllabe valide (« MA »,
+  « CHA », « BRA »…), la voix de l'appareil la lit après une petite
+  pause ; sinon rien n'est lu. Un mot de la liste tapé en entier est
+  reconnu (image + mot).
 - **Mots** : une image et un mot à recopier ; la touche suivante brille,
   chaque bonne lettre dit son nom, le mot est lu à la fin.
 - **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil).
@@ -54,6 +56,10 @@ enregistrement disent leur nom.
 ## Outils
 
 - `tools/generate_audio.py` : génère les fichiers audio (Piper, hors ligne).
+- `tools/import_syllabes.py` : écrit `syllabes.js`, la liste des 594
+  syllabes valides, d'après le syllabaire
+  [Syllabux](https://forge.apps.education.fr/educajou/syllabux) (Arnaud
+  Champollion, Éducajou).
 - `tools/variantes.py` + `ecoute.html` : plusieurs versions générées de
   chaque son de lettre, à comparer à l'oreille.
 

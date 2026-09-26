@@ -30,7 +30,7 @@
       <span class="gros-label">Lettres</span>
     </button>
     <button type="button" class="gros-bouton" id="btn-go-mots">
-      <span class="gros-emoji">🐱</span>
+      <span class="gros-emoji">🧩</span>
       <span class="gros-label">Mots</span>
     </button>
   </div>
@@ -53,10 +53,7 @@
 
   <div class="lettres-zone">
     <div class="lettre-geante" id="lettre-geante" aria-live="polite"></div>
-    <div class="bande-ligne">
-      <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
-      <button type="button" class="btn-lire" id="btn-lire" aria-label="Lire ce qui est tapé">🔊</button>
-    </div>
+    <div class="bande-lettres" id="bande-lettres" aria-label="Dernières lettres tapées"></div>
     <div class="mot-trouve" id="mot-trouve-lettres" aria-live="polite"></div>
   </div>
 
@@ -100,18 +97,6 @@
     </fieldset>
 
     <fieldset class="groupe-reglage">
-      <legend>Lire ce qui est tapé (écran Lettres) :</legend>
-      <label class="choix-radio">
-        <input type="radio" name="mode-lecture" value="auto" id="radio-lecture-auto">
-        <span>Après chaque lettre</span>
-      </label>
-      <label class="choix-radio">
-        <input type="radio" name="mode-lecture" value="bouton" id="radio-lecture-bouton">
-        <span>Seulement avec 🔊</span>
-      </label>
-    </fieldset>
-
-    <fieldset class="groupe-reglage">
       <legend>Catégories de mots :</legend>
       <label class="choix-case">
         <input type="checkbox" id="cat-courts" value="courts">
@@ -146,6 +131,7 @@
 
 <script src="./words.js"></script>
 <script src="./version.js"></script>
+<script src="./syllabes.js"></script>
 <script src="./enregistrements.js"></script>
 <script src="./app.js"></script>
 </body>

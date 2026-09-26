@@ -254,21 +254,7 @@ a { color: inherit; }
 
 .bande-lettres:empty { visibility: hidden; }
 
-.bande-ligne {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.btn-lire {
-  font-size: clamp(22px, 5vw, 34px);
-  width: 1.8em;
-  height: 1.8em;
-  border-radius: 50%;
-  background: var(--carte);
-  box-shadow: 0 3px 0 var(--ombre);
-}
-.btn-lire:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ombre); }
-.btn-lire.parle { animation: rebond 0.4s ease; }
+.bande-lettres.parle { animation: rebond 0.4s ease; }
 
 .mot-trouve {
   display: flex;
