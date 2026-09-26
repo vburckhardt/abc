@@ -14,7 +14,7 @@ d'accueil), utilisable aussi sur ordinateur avec un vrai clavier.
 
 Tous les chemins sont relatifs (`./…`), l'app fonctionne donc sous un
 sous-dossier. Le service worker (`sw.js`) met tout en cache pour le hors
-ligne : **changez `VERSION` dans `sw.js` à chaque mise à jour**, sinon les
+ligne : **augmentez `APP_VERSION` dans `version.js` à chaque mise à jour** (numéro affiché en bas de l'accueil), sinon les
 appareils gardent l'ancienne version.
 
 ## Ajouter des mots
@@ -28,7 +28,7 @@ appareils gardent l'ancienne version.
    La voix française Piper « siwis » (CC-BY 4.0) est téléchargée la première
    fois. Seuls les sons manquants sont créés ; `audio/manifest.json` est mis
    à jour.
-3. Changez `VERSION` dans `sw.js`.
+3. Augmentez `APP_VERSION` dans `version.js`.
 
 ## Voix
 
