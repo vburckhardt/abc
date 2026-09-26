@@ -1,14 +1,16 @@
-// Liste des mots. Pour ajouter un mot :
-//   { mot: "CHAT", emoji: "🐱" }
-// puis régénérer les sons avec : python3 tools/generate_audio.py
-// Le niveau est calculé selon la longueur (1 : 3-4 lettres, 2 : 5-6, 3 : 7+).
-// famille: true => catégorie « Famille ».
+// Liste des mots (chacun avec une image, un enfant ne sait pas encore lire).
+// Pour ajouter un mot : { mot: "CHAT", emoji: "🐱" }, puis augmenter
+// APP_VERSION dans version.js.
+// - famille: true => catégorie « Famille » ; sinon la catégorie dépend de la
+//   longueur (courts : 3-4 lettres, moyens : 5-6, longs : 7+).
+// - dire: "…" (facultatif) => orthographe donnée à la voix si le mot est mal
+//   prononcé (noms propres).
 window.MOTS = [
   // Famille
   { mot: "LÉO", emoji: "👦", famille: true },
   { mot: "PAPA", emoji: "👨", famille: true },
   { mot: "MAMAN", emoji: "👩", famille: true },
-  { mot: "BURCKHARDT", emoji: "👨‍👩‍👦", famille: true },
+  { mot: "BURCKHARDT", emoji: "👨‍👩‍👦", famille: true, dire: "burkarte" },
 
   // Animaux
   { mot: "CHAT", emoji: "🐱" },

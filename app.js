@@ -1,27 +1,9 @@
-// ===================== ABC de Léo — app.js =====================
+// ===================== ABC — app.js =====================
 // Application unique, sans framework, sans build. Toutes les routes sont
 // gérées en montrant/masquant des <section>. Tout est en français.
 
 (function () {
   "use strict";
-
-  // ----------------------------------------------------------------
-  // Normalisation des mots -> identifiant de fichier audio.
-  // RÈGLE (à respecter aussi côté générateur Python `tools/generate_audio.py`) :
-  //   1. Décomposer en NFD (séparer lettre + accent)
-  //   2. Retirer les diacritiques (accents)
-  //   3. Passer en minuscules
-  //   4. Retirer tout ce qui n'est pas a-z (espaces, apostrophes, tirets…)
-  // Exemples : "LÉO" -> "leo", "GÂTEAU" -> "gateau", "BURCKHARDT" -> "burckhardt"
-  // ----------------------------------------------------------------
-  function normaliserId(mot) {
-    return mot
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z]/g, "");
-  }
-  window.normaliserId = normaliserId; // exposé pour debug éventuel
 
   // Retire les accents d'une seule lettre pour la comparaison clavier.
   function lettrePlate(l) {
@@ -35,25 +17,7 @@
   // ----------------------------------------------------------------
   // Réglages (localStorage, avec valeurs par défaut si indisponible)
   // ----------------------------------------------------------------
-  // Les sons syllabiques (« sss », « beu ») sont en pause le temps de les
-  // réenregistrer : le choix est caché et les lettres disent leur nom.
-  // Remettre à true pour réactiver le réglage « Leur son ».
-  var SONS_LETTRES_DISPONIBLES = false;
-
-  // Lettres (minuscules) pour lesquelles un parent a enregistré un son via
-  // enregistrer.html. Rempli de façon asynchrone (IndexedDB) au démarrage,
-  // voir chargerLettresEnregistrees() plus bas.
-  var lettresEnregistrees = new Set();
-
-  // Le réglage "Leur son (sss)" n'a de sens que si des sons existent : soit
-  // les fichiers générés (SONS_LETTRES_DISPONIBLES), soit au moins un
-  // enregistrement du parent.
-  function sonsDisponibles() {
-    return SONS_LETTRES_DISPONIBLES || lettresEnregistrees.size > 0;
-  }
-
   var REGLAGES_DEFAUT = {
-    modeLettre: SONS_LETTRES_DISPONIBLES ? "son" : "nom", // "son" | "nom"
     categories: { courts: true, moyens: false, longs: false, famille: true },
     sonActif: true
   };
@@ -66,7 +30,6 @@
       if (!brut) return clone(REGLAGES_DEFAUT);
       var parse = JSON.parse(brut);
       return {
-        modeLettre: parse.modeLettre === "son" && sonsDisponibles() ? "son" : "nom",
         categories: Object.assign(clone(REGLAGES_DEFAUT.categories), parse.categories || {}),
         sonActif: parse.sonActif !== false
       };
@@ -88,11 +51,12 @@
   }
 
   // ==================================================================
-  // MOTEUR AUDIO (Web Audio API, avec déblocage iOS)
+  // SONS
+  // Tout est dit par la voix française de l'appareil (speechSynthesis, hors
+  // ligne sur iOS) : noms des lettres, syllabes, mots, « Bravo ! ». Seul le
+  // « bonk » d'erreur est un son synthétisé (Web Audio).
   // ==================================================================
   var ctx = null;
-  var buffers = new Map(); // chemin -> AudioBuffer (ou null si échec)
-  var enCoursLettre = null; // source actuellement jouée pour une lettre
 
   function obtenirContexte() {
     if (!ctx) {
@@ -115,216 +79,54 @@
     } catch (e) {}
   }
 
-  function chargerBuffer(chemin) {
-    if (buffers.has(chemin)) return Promise.resolve(buffers.get(chemin));
-    var c = obtenirContexte();
-    if (!c) return Promise.resolve(null);
-    return fetch(chemin)
-      .then(function (rep) {
-        if (!rep.ok) throw new Error("fichier absent");
-        return rep.arrayBuffer();
-      })
-      .then(function (arr) {
-        return c.decodeAudioData(arr);
-      })
-      .then(function (buf) {
-        buffers.set(chemin, buf);
-        return buf;
-      })
-      .catch(function () {
-        buffers.set(chemin, null); // évite de re-fetcher un fichier manquant
-        return null;
-      });
-  }
+  // Noms des lettres écrits pour la voix de l'appareil (une lettre seule
+  // peut être mal lue ; « bé », « esse »… se lisent comme du français).
+  var NOMS_LETTRES = {
+    a: "a", b: "bé", c: "cé", d: "dé", e: "eu", f: "effe", g: "gé",
+    h: "hache", i: "i", j: "ji", k: "ka", l: "elle", m: "emme", n: "enne",
+    o: "o", p: "pé", q: "ku", r: "erre", s: "esse", t: "té", u: "u",
+    v: "vé", w: "double vé", x: "ixe", y: "i grec", z: "zède"
+  };
 
-  // Joue un buffer, retourne le "source node" (ou null).
-  function jouerBuffer(buf) {
-    if (!buf || !reglages.sonActif) return null;
-    var c = obtenirContexte();
-    if (!c) return null;
-    try {
-      var src = c.createBufferSource();
-      src.buffer = buf;
-      src.connect(c.destination);
-      src.start(0);
-      return src;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Lettres dont le son est dit par la voix de l'appareil plutôt que par le
-  // fichier enregistré (choisi à l'oreille sur ecoute.html). Le fichier sert
-  // de secours si la synthèse vocale n'existe pas. Un enregistrement du
-  // parent (voir enregistrer.html) l'emporte toujours sur ce réglage.
-  var SON_VOIX_APPAREIL = SONS_LETTRES_DISPONIBLES ? { o: "o" } : {};
-
-  // Charge (et met en cache sous "rec:<l>") l'enregistrement du parent pour
-  // une lettre, si présent. Résout un AudioBuffer, ou null.
-  function chargerBufferEnregistrement(l) {
-    var cle = "rec:" + l;
-    if (buffers.has(cle)) return Promise.resolve(buffers.get(cle));
-    var c = obtenirContexte();
-    if (!c || !window.Enregistrements) return Promise.resolve(null);
-    return window.Enregistrements.lire(l).then(function (blob) {
-      if (!blob) {
-        buffers.set(cle, null);
-        return null;
-      }
-      return blob.arrayBuffer().then(function (arr) {
-        return c.decodeAudioData(arr);
-      }).then(function (buf) {
-        buffers.set(cle, buf);
-        return buf;
-      }).catch(function () {
-        buffers.set(cle, null);
-        return null;
-      });
-    }).catch(function () {
-      buffers.set(cle, null);
-      return null;
-    });
-  }
-
-  // Joue le son d'une lettre (son OU nom selon réglage). Arrête la précédente.
+  // Dit le nom d'une lettre (coupe ce qui était en train d'être dit).
   function jouerLettre(lettre) {
-    if (!reglages.sonActif) return;
     var l = lettrePlate(lettre).toLowerCase();
-    if (l.length !== 1 || l < "a" || l > "z") return;
-    if (synthese) synthese.cancel(); // coupe une lecture de mot en cours
-    if (enCoursLettre) {
-      try { enCoursLettre.stop(0); } catch (e) {}
-      enCoursLettre = null;
-    }
-
-    if (reglages.modeLettre === "son" && lettresEnregistrees.has(l)) {
-      // Un enregistrement du parent existe : il l'emporte toujours.
-      chargerBufferEnregistrement(l).then(function (buf) {
-        if (buf) {
-          enCoursLettre = jouerBuffer(buf);
-        } else {
-          jouerLettreSecours(l);
-        }
-      });
-      return;
-    }
-
-    if (reglages.modeLettre === "son" && SONS_LETTRES_DISPONIBLES) {
-      if (synthese && SON_VOIX_APPAREIL[l]) {
-        dire(SON_VOIX_APPAREIL[l]);
-        return;
-      }
-      chargerBuffer("./audio/sons/" + l + ".mp3").then(function (buf) {
-        enCoursLettre = jouerBuffer(buf);
-      });
-      return;
-    }
-
-    // Mode "nom", ou "son" sans aucun son disponible pour cette lettre :
-    // on retombe sur le nom de la lettre.
-    jouerLettreSecours(l);
+    if (NOMS_LETTRES[l]) dire(NOMS_LETTRES[l]);
   }
 
-  // Joue le nom de la lettre (fichier ./audio/noms/<l>.mp3).
-  function jouerLettreSecours(l) {
-    chargerBuffer("./audio/noms/" + l + ".mp3").then(function (buf) {
-      enCoursLettre = jouerBuffer(buf);
-    });
+  // Dit un mot de la liste. `dire` (facultatif dans words.js) donne une
+  // orthographe pour la voix quand le mot est mal lu (noms propres).
+  function jouerMot(entree) {
+    return dire(entree.dire || entree.mot);
   }
 
-  // Recharge la liste des lettres enregistrées par le parent (IndexedDB) et
-  // met à jour l'affichage des réglages en conséquence.
-  function chargerLettresEnregistrees() {
-    if (!window.Enregistrements) return Promise.resolve();
-    return window.Enregistrements.lettres().then(function (liste) {
-      lettresEnregistrees = new Set(liste);
-      mettreAJourVisibiliteModeLettre();
-      // Le réglage sauvegardé demandait peut-être "son" avant qu'on sache
-      // qu'aucun enregistrement n'existait encore : on le ré-applique.
-      reglages = chargerReglages();
-      if (overlayReglages && !overlayReglages.classList.contains("ecran-actif-masque")) {
-        remplirFormulaireReglages();
-      }
-    });
+  function jouerSequenceMotBravo(entree) {
+    return jouerMot(entree).then(function () { return dire("Bravo !"); });
   }
 
-  // Les mots sont dits par la voix française de l'appareil : la voix des
-  // enregistrements (Piper « siwis ») ne sait pas faire les voyelles nasales
-  // (« main » devient « mai »). Exceptions : les mots listés ici gardent leur
-  // enregistrement (noms propres que la voix de l'appareil prononcerait mal).
-  // Les enregistrements servent aussi de secours sans synthèse vocale.
-  var MOTS_ENREGISTRES = { burckhardt: true };
-
-  // Joue un mot (tel qu'affiché, avec ses accents). Promesse résolue à la fin.
-  function jouerMot(mot) {
-    if (!reglages.sonActif) return Promise.resolve();
-    var id = normaliserId(mot);
-    if (synthese && !MOTS_ENREGISTRES[id]) return dire(mot);
-    var chemin = "./audio/mots/" + id + ".mp3";
-    return chargerBuffer(chemin).then(function (buf) {
-      var src = jouerBuffer(buf);
-      if (!src || !buf) return Promise.resolve();
-      return new Promise(function (resolve) {
-        src.onended = resolve;
-        // filet de sécurité si onended ne se déclenche pas
-        setTimeout(resolve, (buf.duration || 1) * 1000 + 300);
-      });
-    });
-  }
-
-  function jouerBravo() {
-    if (!reglages.sonActif) return Promise.resolve();
-    return chargerBuffer("./audio/bravo.mp3").then(function (buf) {
-      var src = jouerBuffer(buf);
-      if (!src || !buf) return Promise.resolve();
-      return new Promise(function (resolve) {
-        src.onended = resolve;
-        setTimeout(resolve, (buf.duration || 1) * 1000 + 300);
-      });
-    });
-  }
-
-  // Joue mot puis bravo, l'un après l'autre.
-  function jouerSequenceMotBravo(mot) {
-    return jouerMot(mot).then(jouerBravo);
-  }
-
-  function precharger26Lettres() {
-    for (var code = 97; code <= 122; code++) {
-      var l = String.fromCharCode(code);
-      if (SONS_LETTRES_DISPONIBLES) chargerBuffer("./audio/sons/" + l + ".mp3");
-      chargerBuffer("./audio/noms/" + l + ".mp3");
-    }
-  }
-
-  // Petit son synthétisé (bonk) via oscillateur, pas de fichier.
-  function jouerTon(freqDepart, freqFin, duree, type) {
+  // Petit son d'erreur synthétisé (oscillateur), pas de fichier.
+  function jouerBonk() {
     if (!reglages.sonActif) return;
     var c = obtenirContexte();
     if (!c) return;
     try {
       var osc = c.createOscillator();
       var gain = c.createGain();
-      osc.type = type || "sine";
-      osc.frequency.setValueAtTime(freqDepart, c.currentTime);
-      if (freqFin) osc.frequency.exponentialRampToValueAtTime(freqFin, c.currentTime + duree);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(180, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(90, c.currentTime + 0.22);
       gain.gain.setValueAtTime(0.0001, c.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.35, c.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + duree);
+      gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.22);
       osc.connect(gain);
       gain.connect(c.destination);
       osc.start();
-      osc.stop(c.currentTime + duree + 0.05);
+      osc.stop(c.currentTime + 0.27);
     } catch (e) {}
   }
 
-  function jouerBonk() {
-    jouerTon(180, 90, 0.22, "sine");
-  }
-
   // ------------------------------------------------------------------
-  // Voix de l'appareil (speechSynthesis) pour lire n'importe quelle suite
-  // de lettres tapée. Les voix françaises d'iOS fonctionnent hors ligne.
+  // Voix de l'appareil (speechSynthesis)
   // ------------------------------------------------------------------
   var synthese = window.speechSynthesis || null;
   var voixFr = null;
@@ -382,7 +184,6 @@
     if (debloqueDeja) return;
     debloqueDeja = true;
     debloquerSynthese();
-    precharger26Lettres();
   }
   window.addEventListener("pointerdown", surPremierGeste, { once: false, passive: true });
   window.addEventListener("keydown", surPremierGeste, { once: false });
@@ -396,12 +197,6 @@
     mots: document.getElementById("screen-mots")
   };
   var overlayReglages = document.getElementById("overlay-reglages");
-  var groupeModeLettre = document.getElementById("groupe-mode-lettre");
-
-  function mettreAJourVisibiliteModeLettre() {
-    groupeModeLettre.hidden = !sonsDisponibles();
-  }
-  mettreAJourVisibiliteModeLettre();
 
   function afficherEcran(nom) {
     Object.keys(ecrans).forEach(function (k) {
@@ -412,7 +207,8 @@
     } else if (nom === "mots") {
       demarrerNouveauMot();
     } else {
-      clearTimeout(timerMotSuivant);
+      annulerTimersMots();
+      if (synthese) synthese.cancel();
     }
   }
 
@@ -480,24 +276,12 @@
   document.getElementById("btn-fermer-reglages").addEventListener("click", fermerReglages);
 
   function remplirFormulaireReglages() {
-    document.getElementById("radio-son").checked = reglages.modeLettre === "son";
-    document.getElementById("radio-nom").checked = reglages.modeLettre === "nom";
     document.getElementById("cat-courts").checked = !!reglages.categories.courts;
     document.getElementById("cat-moyens").checked = !!reglages.categories.moyens;
     document.getElementById("cat-longs").checked = !!reglages.categories.longs;
     document.getElementById("cat-famille").checked = !!reglages.categories.famille;
     document.getElementById("son-actif").checked = !!reglages.sonActif;
   }
-
-  document.getElementById("radio-son").addEventListener("change", function () {
-    reglages.modeLettre = "son";
-    sauverReglages();
-  });
-  document.getElementById("radio-nom").addEventListener("change", function () {
-    reglages.modeLettre = "nom";
-    sauverReglages();
-  });
-
 
   function surChangementCategorie() {
     var c = {
@@ -642,8 +426,8 @@
     }
     bandeLettresEl.textContent = bandeLettres;
 
-    // Un mot connu est lu avec le vrai enregistrement ; sinon on lit la
-    // bande avec la voix de l'appareil après une petite pause.
+    // Un mot de la liste s'affiche avec son image ; sinon on lit la syllabe
+    // finale éventuelle après une petite pause.
     if (!verifierMotDansBande()) programmerLecture();
   }
 
@@ -651,8 +435,6 @@
     var venteBande = bandeLettres; // déjà en majuscules
     for (var i = 0; i < MOTS.length; i++) {
       var entree = MOTS[i];
-      var idMot = normaliserId(entree.mot);
-      if (idMot.length < 3) continue;
       var motPlat = lettrePlate(entree.mot); // majuscules sans accent, même longueur que mot
       if (motPlat.length > venteBande.length) continue;
       if (venteBande.slice(venteBande.length - motPlat.length) === motPlat) {
@@ -671,7 +453,7 @@
     void motTrouveEl.offsetWidth;
     motTrouveEl.classList.add("affiche");
     lancerConfettis();
-    jouerMot(entree.mot);
+    jouerMot(entree);
     setTimeout(function () {
       bandeLettres = "";
       bandeLettresEl.textContent = "";
@@ -691,6 +473,13 @@
   var positionActuelle = 0; // index de la prochaine lettre attendue
   var derniersMots = []; // évite de répéter les 5 derniers
   var timerMotSuivant = null; // délai avant le mot suivant après un bravo
+  var timerLectureMot = null; // lecture « mot + Bravo » après la dernière lettre
+
+  function annulerTimersMots() {
+    clearTimeout(timerMotSuivant);
+    clearTimeout(timerLectureMot);
+    timerMotSuivant = timerLectureMot = null;
+  }
 
   function motCorrespondCategorie(entree) {
     if (entree.famille) return !!reglages.categories.famille;
@@ -716,8 +505,8 @@
   }
 
   function demarrerNouveauMot() {
-    clearTimeout(timerMotSuivant);
-    timerMotSuivant = null;
+    annulerTimersMots();
+    if (synthese) synthese.cancel();
     motActuel = choisirMotAleatoire();
     if (!motActuel) return;
     derniersMots.push(motActuel.mot);
@@ -773,8 +562,8 @@
         // Mot complet !
         mettreAJourGlowClavier();
         // Laisse finir le nom de la dernière lettre avant de lire le mot.
-        var motFini = motActuel.mot;
-        setTimeout(function () { jouerSequenceMotBravo(motFini); }, 700);
+        var motFini = motActuel;
+        timerLectureMot = setTimeout(function () { jouerSequenceMotBravo(motFini); }, 700);
         lancerConfettis();
         timerMotSuivant = setTimeout(demarrerNouveauMot, 3200);
       } else {
@@ -793,7 +582,7 @@
   construireClavier(clavierMotsEl, false, surToucheMots);
 
   motEmojiEl.addEventListener("click", function () {
-    if (motActuel) jouerMot(motActuel.mot);
+    if (motActuel) jouerMot(motActuel);
   });
 
   btnMotSuivant.addEventListener("click", function () {
@@ -904,24 +693,15 @@
   verifierVersionServeur();
 
   // ==================================================================
-  // Sons enregistrés par le parent : peuvent changer pendant que cette
-  // page reste ouverte en arrière-plan (ex: onglet enregistrer.html dans un
-  // autre écran). On recharge la liste et on vide le cache "rec:" à chaque
-  // retour au premier plan.
+  // Passage en arrière-plan : on coupe la voix (sur iOS, une lecture
+  // interrompue par l'arrière-plan peut bloquer la synthèse vocale).
   // ==================================================================
-  function surRetourPremierPlan() {
-    if (document.visibilityState && document.visibilityState !== "visible") return;
-    buffers.forEach(function (v, cle) {
-      if (typeof cle === "string" && cle.indexOf("rec:") === 0) buffers.delete(cle);
-    });
-    chargerLettresEnregistrees();
-  }
-  window.addEventListener("pageshow", surRetourPremierPlan);
-  document.addEventListener("visibilitychange", surRetourPremierPlan);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden" && synthese) synthese.cancel();
+  });
 
   // ==================================================================
   // Initialisation
   // ==================================================================
   afficherEcran("accueil");
-  chargerLettresEnregistrees();
 })();

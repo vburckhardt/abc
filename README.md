@@ -1,72 +1,50 @@
 # ABC
 
 Petite application web hors ligne pour apprendre les lettres et les mots,
-pensée pour un enfant de 5 ans. Pas de dépendance, pas de build, pas de
-ressource externe : du HTML/CSS/JS simple. Faite pour l'iPhone (écran
-d'accueil), utilisable aussi sur ordinateur avec un vrai clavier.
+pensée pour les 4-5 ans. Pas de dépendance, pas de build, pas de ressource
+externe : du HTML/CSS/JS simple. Faite pour l'iPhone (écran d'accueil),
+utilisable aussi sur ordinateur avec un vrai clavier.
 
 - **Lettres** : clavier A–Z ; chaque lettre s'affiche en grand et dit son
   nom. Si ce qui est tapé se termine par une syllabe valide (« MA »,
-  « CHA », « BRA »…), la voix de l'appareil la lit après une petite
-  pause ; sinon rien n'est lu. Un mot de la liste tapé en entier est
-  reconnu (image + mot).
+  « CHA », « BRA »…), elle est lue après une petite pause ; sinon rien
+  n'est lu. Un mot de la liste tapé en entier s'affiche avec son image.
 - **Mots** : une image et un mot à recopier ; la touche suivante brille,
-  chaque bonne lettre dit son nom, le mot est lu à la fin.
-- **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil).
-
-Tous les chemins sont relatifs (`./…`), l'app fonctionne donc sous un
-sous-dossier. Le service worker (`sw.js`) met tout en cache pour le hors
-ligne : **augmentez `APP_VERSION` dans `version.js` à chaque mise à jour** (numéro affiché en bas de l'accueil), sinon les
-appareils gardent l'ancienne version.
-
-## Ajouter des mots
-
-1. Éditez `words.js`, par exemple `{ mot: "ÉCOLE", emoji: "🏫" }`
-   (`famille: true` pour la catégorie « Famille »).
-2. Générez les sons de secours (une fois : `pip install piper-tts imageio-ffmpeg numpy`) :
-   ```
-   python3 tools/generate_audio.py
-   ```
-   La voix française Piper « siwis » (CC-BY 4.0) est téléchargée la première
-   fois. Seuls les sons manquants sont créés ; `audio/manifest.json` est mis
-   à jour.
-3. Augmentez `APP_VERSION` dans `version.js`.
+  chaque bonne lettre dit son nom, le mot est lu à la fin, puis « Bravo ! ».
+- **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil) :
+  catégories de mots, son.
 
 ## Voix
 
-- **Mots et texte tapé** : voix française de l'appareil (hors ligne sur
-  iOS). La voix Piper ne sait pas faire les voyelles nasales (« main »
-  devient « mai »). Les mots listés dans `MOTS_ENREGISTRES` (`app.js`),
-  par exemple des noms propres mal lus par l'appareil, gardent leur fichier
-  `audio/mots/<id>.mp3`. Ces fichiers servent aussi de secours.
-- **Noms des lettres** : `audio/noms/<lettre>.mp3` (Piper).
-- **Sons des lettres** (« sss », « mmm », « beu ») : les sons générés
-  (`audio/sons/`) ne sont pas assez bons, ils sont désactivés
-  (`SONS_LETTRES_DISPONIBLES = false` dans `app.js`).
+Tout est dit par la voix française de l'appareil (`speechSynthesis`, hors
+ligne sur iOS). Les noms des lettres sont écrits en toutes lettres pour la
+voix (`NOMS_LETTRES` dans `app.js` : « bé », « ji », « esse »…). Un mot mal
+prononcé peut recevoir une orthographe pour la voix (`dire` dans
+`words.js`).
 
-## Enregistrer ses propres sons de lettres
+## Mettre à jour
 
-Réglages → **🎙️ Enregistrer les sons** (`enregistrer.html`). Touchez une
-lettre, enregistrez son son avec le micro, réécoutez. Les enregistrements
-restent **sur l'appareil** (IndexedDB) : il faut donc enregistrer depuis
-l'app installée elle-même. Dès qu'un son est enregistré, le réglage
-« Les lettres disent : leur son » apparaît ; les lettres sans
-enregistrement disent leur nom.
+À chaque changement, **augmentez `APP_VERSION` dans `version.js`**. Le
+numéro est affiché en bas de l'accueil (✓ = identique au serveur). En
+ligne, l'app charge toujours la dernière version ; hors ligne, elle utilise
+la copie en cache (`sw.js`). Tous les chemins sont relatifs (`./…`).
 
-## Outils
+## Ajouter des mots
 
-- `tools/generate_audio.py` : génère les fichiers audio (Piper, hors ligne).
-- `tools/import_syllabes.py` : écrit `syllabes.js`, la liste des 594
-  syllabes valides, d'après le syllabaire
-  [Syllabux](https://forge.apps.education.fr/educajou/syllabux) (Arnaud
-  Champollion, Éducajou).
-- `tools/variantes.py` + `ecoute.html` : plusieurs versions générées de
-  chaque son de lettre, à comparer à l'oreille.
+Dans `words.js` : `{ mot: "ÉCOLE", emoji: "🏫" }` (`famille: true` pour la
+catégorie « Famille »). Chaque mot doit avoir une image claire pour un
+enfant qui ne lit pas encore.
+
+## Syllabes
+
+`syllabes.js` liste les 594 syllabes valides (A–Z, 2-3 lettres), d'après
+le syllabaire [Syllabux](https://forge.apps.education.fr/educajou/syllabux)
+(Arnaud Champollion, Éducajou). Régénérer : `python3 tools/import_syllabes.py
+<dossier syllabux>`.
 
 ## Fichiers
 
 - `index.html`, `style.css`, `app.js` : l'application
-- `words.js` : la liste des mots
-- `enregistrer.html`, `enregistrements.js` : enregistrement des sons
-- `sw.js`, `manifest.webmanifest`, `icon-*.png` : hors ligne et icône
-- `audio/` : sons générés (`noms/`, `sons/`, `mots/`, `bravo.mp3`, `essai/`)
+- `words.js` : les mots ; `syllabes.js` : les syllabes
+- `version.js`, `sw.js`, `manifest.webmanifest`, `icon-*.png` : version,
+  hors ligne, icône
