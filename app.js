@@ -156,6 +156,11 @@
   // on n'interrompt que si la voix parle, et on reparle un instant après.
   function dire(texte) {
     if (!synthese || !reglages.sonActif || !texte) return Promise.resolve();
+    if (!voixDebloquee) {
+      // Pas encore de vrai geste : sera dit au moment où le doigt se lève.
+      texteEnAttente = texte;
+      return Promise.resolve();
+    }
     // En minuscules, sinon « CHAT » peut être épelé comme un sigle.
     var u = new SpeechSynthesisUtterance(texte.toLowerCase());
     u.lang = "fr-FR";
@@ -179,30 +184,50 @@
     });
   }
 
-  // Au premier geste : jouer un son muet via <audio> fait passer l'iPhone en
-  // mode « lecture de média », ce qui évite que l'interrupteur silencieux
-  // coupe la voix.
+  // ------------------------------------------------------------------
+  // Déblocage du son sur iPhone
+  // Safari ne laisse la page parler qu'après un « vrai » geste : doigt qui se
+  // lève (touchend / click) ou touche du clavier ; un doigt qui se pose
+  // (pointerdown) ne compte pas. Au premier vrai geste :
+  // - on parle tout de suite (ce qui attendait, sinon une réplique vide) :
+  //   ensuite la voix est libre de parler à tout moment ;
+  // - on joue un son muet via <audio> : l'iPhone passe en « lecture de
+  //   média », l'interrupteur silencieux ne coupe plus le son.
+  // Le contexte Web Audio (le « bonk ») est relancé à chaque geste : iOS le
+  // suspend quand l'app passe en arrière-plan.
+  // ------------------------------------------------------------------
+  var voixDebloquee = false;
+  var texteEnAttente = null;
   var SON_MUET = "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAAAAAAAAAAAA==";
-  function debloquerSynthese() {
+
+  function debloquerVoix() {
+    if (voixDebloquee) return;
+    voixDebloquee = true;
     try {
       var a = new Audio(SON_MUET);
       a.setAttribute("playsinline", "");
       a.play().catch(function () {});
     } catch (e) {}
+    if (!synthese) return;
+    var texte = texteEnAttente;
+    texteEnAttente = null;
+    if (texte) {
+      dire(texte);
+    } else {
+      var u = new SpeechSynthesisUtterance("");
+      u.volume = 0;
+      synthese.speak(u);
+    }
   }
 
-  // Déblocage sur premier geste utilisateur.
-  var debloqueDeja = false;
-  // On relance le contexte à chaque geste : iOS le suspend quand l'app
-  // passe en arrière-plan.
-  function surPremierGeste() {
+  function surGeste() {
     debloquerAudio();
-    if (debloqueDeja) return;
-    debloqueDeja = true;
-    debloquerSynthese();
+    debloquerVoix();
   }
-  window.addEventListener("pointerdown", surPremierGeste, { once: false, passive: true });
-  window.addEventListener("keydown", surPremierGeste, { once: false });
+  window.addEventListener("pointerdown", debloquerAudio, { passive: true });
+  ["touchend", "click", "keydown"].forEach(function (type) {
+    window.addEventListener(type, surGeste, true);
+  });
 
   // ==================================================================
   // NAVIGATION ENTRE ÉCRANS
@@ -284,6 +309,7 @@
 
   function ouvrirReglages() {
     remplirFormulaireReglages();
+    afficherEtatVoix();
     overlayReglages.classList.remove("ecran-actif-masque");
   }
   function fermerReglages() {
@@ -318,6 +344,25 @@
   }
   ["cat-courts", "cat-moyens", "cat-longs", "cat-famille"].forEach(function (id) {
     document.getElementById(id).addEventListener("change", surChangementCategorie);
+  });
+
+  // État de la voix (pour le parent : savoir pourquoi il n'y aurait pas de son).
+  function afficherEtatVoix() {
+    var el = document.getElementById("etat-voix");
+    if (!synthese) {
+      el.textContent = "Voix de l'appareil : indisponible dans ce navigateur.";
+      return;
+    }
+    var fr = synthese.getVoices().filter(function (v) { return /^fr/i.test(v.lang); });
+    el.textContent = "Voix : " + (voixFr ? voixFr.name : "française par défaut") +
+      " · " + fr.length + " voix française(s) · " +
+      (voixDebloquee ? "activée" : "pas encore activée") +
+      (reglages.sonActif ? "" : " · son coupé dans les réglages");
+  }
+
+  document.getElementById("btn-tester-voix").addEventListener("click", function () {
+    dire("Bonjour ! a, bé, cé.");
+    setTimeout(afficherEtatVoix, 300);
   });
 
   document.getElementById("son-actif").addEventListener("change", function (e) {
