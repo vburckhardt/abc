@@ -1,5 +1,7 @@
 /* ===================== Base / kid-proofing ===================== */
 :root {
+  --carte: #ffffff; /* surface des boutons et cartes */
+  --encre-fixe: #4a3c2f; /* texte sur fond coloré clair (jaune) */
   --creme: #fff8ec;
   --creme-fonce: #ffe9c7;
   --encre: #4a3c2f;
@@ -95,7 +97,7 @@ a { color: inherit; }
   gap: 12px;
   width: clamp(160px, 40vw, 260px);
   height: clamp(160px, 40vw, 260px);
-  background: white;
+  background: var(--carte);
   border-radius: 36px;
   box-shadow: 0 8px 0 var(--ombre), 0 10px 20px var(--ombre);
   transition: transform 0.08s ease;
@@ -165,11 +167,26 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: var(--carte);
   border-radius: 18px;
   box-shadow: 0 4px 0 var(--ombre);
 }
 .btn-maison:active { transform: translateY(3px); box-shadow: none; }
+
+/* Boutons de navigation : flèches dessinées sur fond coloré, pour ne pas
+   ressembler aux images (emoji) des mots. */
+.btn-nav { color: white; }
+.btn-maison.btn-nav { background: var(--orange); }
+.btn-suivant.btn-nav { background: var(--vert); }
+.btn-nav svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .btn-suivant {
   position: absolute;
@@ -182,7 +199,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: var(--carte);
   border-radius: 18px;
   box-shadow: 0 4px 0 var(--ombre);
 }
@@ -229,7 +246,7 @@ a { color: inherit; }
   letter-spacing: 4px;
   min-height: 1.5em;
   color: var(--encre);
-  background: white;
+  background: var(--carte);
   padding: 6px 18px;
   border-radius: 16px;
   box-shadow: 0 3px 0 var(--ombre);
@@ -247,7 +264,7 @@ a { color: inherit; }
   width: 1.8em;
   height: 1.8em;
   border-radius: 50%;
-  background: white;
+  background: var(--carte);
   box-shadow: 0 3px 0 var(--ombre);
 }
 .btn-lire:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ombre); }
@@ -311,7 +328,7 @@ a { color: inherit; }
   justify-content: center;
   font-size: clamp(20px, 5vw, 38px);
   font-weight: 900;
-  background: white;
+  background: var(--carte);
   border-radius: 12px;
   border: 3px solid var(--creme-fonce);
   color: var(--encre);
@@ -360,7 +377,7 @@ a { color: inherit; }
   min-height: 44px;
   font-size: clamp(16px, 3.4vh, 30px);
   font-weight: 800;
-  background: white;
+  background: var(--carte);
   border-radius: 12px;
   box-shadow: 0 3px 0 var(--ombre);
   color: var(--encre);
@@ -494,3 +511,24 @@ a { color: inherit; }
   .touche { min-height: 48px; }
   .lettre-geante { font-size: 24vh; min-height: 0; }
 }
+
+/* ===================== Mode sombre ===================== */
+:root { color-scheme: light dark; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --creme: #1f1b16;
+    --creme-fonce: #3a3128;
+    --carte: #2e2821;
+    --encre: #f3e9dc;
+    --ombre: rgba(0, 0, 0, 0.5);
+  }
+}
+:root[data-theme="dark"] {
+  --creme: #1f1b16;
+  --creme-fonce: #3a3128;
+  --carte: #2e2821;
+  --encre: #f3e9dc;
+  --ombre: rgba(0, 0, 0, 0.5);
+}
+/* Touche aidée (fond jaune) : texte foncé dans les deux modes. */
+.touche.glow { color: var(--encre-fixe); }
