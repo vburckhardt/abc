@@ -36,6 +36,8 @@
   </div>
 
   <!-- Réglages cachés : appui long de 2 secondes -->
+  <div class="version-app" id="version-app" aria-live="polite"></div>
+
   <button type="button" id="btn-reglages" aria-label="Réglages (appui long)">
     <svg class="anneau-appui" viewBox="0 0 44 44" aria-hidden="true">
       <circle class="anneau-fond" cx="22" cy="22" r="19"></circle>
@@ -92,6 +94,11 @@
       </label>
     </fieldset>
 
+    <fieldset class="groupe-reglage" id="groupe-son-lettres">
+      <legend>Sons des lettres :</legend>
+      <a href="./enregistrer.html" class="btn-enregistrer-sons">🎙️ Enregistrer les sons</a>
+    </fieldset>
+
     <fieldset class="groupe-reglage">
       <legend>Lire ce qui est tapé (écran Lettres) :</legend>
       <label class="choix-radio">
@@ -138,6 +145,8 @@
 <div id="confettis" aria-hidden="true"></div>
 
 <script src="./words.js"></script>
+<script src="./version.js"></script>
+<script src="./enregistrements.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>

@@ -38,6 +38,18 @@
   // Remettre à true pour réactiver le réglage « Leur son ».
   var SONS_LETTRES_DISPONIBLES = false;
 
+  // Lettres (minuscules) pour lesquelles un parent a enregistré un son via
+  // enregistrer.html. Rempli de façon asynchrone (IndexedDB) au démarrage,
+  // voir chargerLettresEnregistrees() plus bas.
+  var lettresEnregistrees = new Set();
+
+  // Le réglage "Leur son (sss)" n'a de sens que si des sons existent : soit
+  // les fichiers générés (SONS_LETTRES_DISPONIBLES), soit au moins un
+  // enregistrement du parent.
+  function sonsDisponibles() {
+    return SONS_LETTRES_DISPONIBLES || lettresEnregistrees.size > 0;
+  }
+
   var REGLAGES_DEFAUT = {
     modeLettre: SONS_LETTRES_DISPONIBLES ? "son" : "nom", // "son" | "nom"
     lectureAuto: true, // lire la bande de lettres après chaque lettre
@@ -53,7 +65,7 @@
       if (!brut) return clone(REGLAGES_DEFAUT);
       var parse = JSON.parse(brut);
       return {
-        modeLettre: parse.modeLettre === "nom" || !SONS_LETTRES_DISPONIBLES ? "nom" : "son",
+        modeLettre: parse.modeLettre === "son" && sonsDisponibles() ? "son" : "nom",
         lectureAuto: parse.lectureAuto !== false,
         categories: Object.assign(clone(REGLAGES_DEFAUT.categories), parse.categories || {}),
         sonActif: parse.sonActif !== false
@@ -143,27 +155,96 @@
 
   // Lettres dont le son est dit par la voix de l'appareil plutôt que par le
   // fichier enregistré (choisi à l'oreille sur ecoute.html). Le fichier sert
-  // de secours si la synthèse vocale n'existe pas.
-  var SON_VOIX_APPAREIL = { o: "o" };
+  // de secours si la synthèse vocale n'existe pas. Un enregistrement du
+  // parent (voir enregistrer.html) l'emporte toujours sur ce réglage.
+  var SON_VOIX_APPAREIL = SONS_LETTRES_DISPONIBLES ? { o: "o" } : {};
+
+  // Charge (et met en cache sous "rec:<l>") l'enregistrement du parent pour
+  // une lettre, si présent. Résout un AudioBuffer, ou null.
+  function chargerBufferEnregistrement(l) {
+    var cle = "rec:" + l;
+    if (buffers.has(cle)) return Promise.resolve(buffers.get(cle));
+    var c = obtenirContexte();
+    if (!c || !window.Enregistrements) return Promise.resolve(null);
+    return window.Enregistrements.lire(l).then(function (blob) {
+      if (!blob) {
+        buffers.set(cle, null);
+        return null;
+      }
+      return blob.arrayBuffer().then(function (arr) {
+        return c.decodeAudioData(arr);
+      }).then(function (buf) {
+        buffers.set(cle, buf);
+        return buf;
+      }).catch(function () {
+        buffers.set(cle, null);
+        return null;
+      });
+    }).catch(function () {
+      buffers.set(cle, null);
+      return null;
+    });
+  }
 
   // Joue le son d'une lettre (son OU nom selon réglage). Arrête la précédente.
   function jouerLettre(lettre) {
     if (!reglages.sonActif) return;
     var l = lettrePlate(lettre).toLowerCase();
     if (l.length !== 1 || l < "a" || l > "z") return;
-    var dossier = reglages.modeLettre === "nom" ? "noms" : "sons";
-    var chemin = "./audio/" + dossier + "/" + l + ".mp3";
     if (synthese) synthese.cancel(); // coupe une lecture de mot en cours
     if (enCoursLettre) {
       try { enCoursLettre.stop(0); } catch (e) {}
       enCoursLettre = null;
     }
-    if (dossier === "sons" && synthese && SON_VOIX_APPAREIL[l]) {
-      dire(SON_VOIX_APPAREIL[l]);
+
+    if (reglages.modeLettre === "son" && lettresEnregistrees.has(l)) {
+      // Un enregistrement du parent existe : il l'emporte toujours.
+      chargerBufferEnregistrement(l).then(function (buf) {
+        if (buf) {
+          enCoursLettre = jouerBuffer(buf);
+        } else {
+          jouerLettreSecours(l);
+        }
+      });
       return;
     }
-    chargerBuffer(chemin).then(function (buf) {
+
+    if (reglages.modeLettre === "son" && SONS_LETTRES_DISPONIBLES) {
+      if (synthese && SON_VOIX_APPAREIL[l]) {
+        dire(SON_VOIX_APPAREIL[l]);
+        return;
+      }
+      chargerBuffer("./audio/sons/" + l + ".mp3").then(function (buf) {
+        enCoursLettre = jouerBuffer(buf);
+      });
+      return;
+    }
+
+    // Mode "nom", ou "son" sans aucun son disponible pour cette lettre :
+    // on retombe sur le nom de la lettre.
+    jouerLettreSecours(l);
+  }
+
+  // Joue le nom de la lettre (fichier ./audio/noms/<l>.mp3).
+  function jouerLettreSecours(l) {
+    chargerBuffer("./audio/noms/" + l + ".mp3").then(function (buf) {
       enCoursLettre = jouerBuffer(buf);
+    });
+  }
+
+  // Recharge la liste des lettres enregistrées par le parent (IndexedDB) et
+  // met à jour l'affichage des réglages en conséquence.
+  function chargerLettresEnregistrees() {
+    if (!window.Enregistrements) return Promise.resolve();
+    return window.Enregistrements.lettres().then(function (liste) {
+      lettresEnregistrees = new Set(liste);
+      mettreAJourVisibiliteModeLettre();
+      // Le réglage sauvegardé demandait peut-être "son" avant qu'on sache
+      // qu'aucun enregistrement n'existait encore : on le ré-applique.
+      reglages = chargerReglages();
+      if (overlayReglages && !overlayReglages.classList.contains("ecran-actif-masque")) {
+        remplirFormulaireReglages();
+      }
     });
   }
 
@@ -315,9 +396,12 @@
     mots: document.getElementById("screen-mots")
   };
   var overlayReglages = document.getElementById("overlay-reglages");
-  if (!SONS_LETTRES_DISPONIBLES) {
-    document.getElementById("groupe-mode-lettre").hidden = true;
+  var groupeModeLettre = document.getElementById("groupe-mode-lettre");
+
+  function mettreAJourVisibiliteModeLettre() {
+    groupeModeLettre.hidden = !sonsDisponibles();
   }
+  mettreAJourVisibiliteModeLettre();
 
   function afficherEcran(nom) {
     Object.keys(ecrans).forEach(function (k) {
@@ -772,14 +856,74 @@
   // ==================================================================
   // SERVICE WORKER (uniquement en http/https, pas en fichier local)
   // ==================================================================
+  // En ligne, une nouvelle version est cherchée à chaque ouverture ; quand
+  // elle est installée, la page se recharge une fois toute seule.
   if ("serviceWorker" in navigator && (location.protocol === "http:" || location.protocol === "https:")) {
+    var avaitUnControleur = !!navigator.serviceWorker.controller;
+    var rechargee = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      // Première installation : rien à recharger.
+      if (!avaitUnControleur || rechargee) return;
+      rechargee = true;
+      location.reload();
+    });
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js").catch(function () {});
+      navigator.serviceWorker.register("./sw.js").then(function (reg) {
+        reg.update().catch(function () {});
+      }).catch(function () {});
     });
   }
+
+  // ==================================================================
+  // NUMÉRO DE VERSION (accueil) + comparaison avec le serveur
+  // ==================================================================
+  var versionLocale = window.APP_VERSION || "?";
+  var versionEl = document.getElementById("version-app");
+
+  function afficherVersion(versionServeur) {
+    var texte = "version " + versionLocale;
+    if (versionServeur && versionServeur !== versionLocale) {
+      texte += " · nouvelle version " + versionServeur + " en cours…";
+      versionEl.classList.add("a-jour-non");
+    } else if (versionServeur) {
+      texte += " ✓";
+      versionEl.classList.remove("a-jour-non");
+    }
+    versionEl.textContent = texte;
+  }
+
+  function verifierVersionServeur() {
+    afficherVersion(null);
+    if (!navigator.onLine || !window.fetch) return;
+    fetch("./version.js?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.text() : ""; })
+      .then(function (txt) {
+        var m = /APP_VERSION\s*=\s*"([^"]+)"/.exec(txt);
+        afficherVersion(m ? m[1] : null);
+      })
+      .catch(function () {});
+  }
+  verifierVersionServeur();
+
+  // ==================================================================
+  // Sons enregistrés par le parent : peuvent changer pendant que cette
+  // page reste ouverte en arrière-plan (ex: onglet enregistrer.html dans un
+  // autre écran). On recharge la liste et on vide le cache "rec:" à chaque
+  // retour au premier plan.
+  // ==================================================================
+  function surRetourPremierPlan() {
+    if (document.visibilityState && document.visibilityState !== "visible") return;
+    buffers.forEach(function (v, cle) {
+      if (typeof cle === "string" && cle.indexOf("rec:") === 0) buffers.delete(cle);
+    });
+    chargerLettresEnregistrees();
+  }
+  window.addEventListener("pageshow", surRetourPremierPlan);
+  document.addEventListener("visibilitychange", surRetourPremierPlan);
 
   // ==================================================================
   // Initialisation
   // ==================================================================
   afficherEcran("accueil");
+  chargerLettresEnregistrees();
 })();
