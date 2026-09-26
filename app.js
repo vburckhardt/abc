@@ -149,30 +149,46 @@
     if ("onvoiceschanged" in synthese) synthese.onvoiceschanged = choisirVoixFr;
   }
 
+  var repliqueEnCours = null; // garde une référence (sinon le navigateur peut l'oublier)
+
   // Dit un texte ; la promesse est résolue quand la voix a fini.
+  // Sur iPhone, cancel() suivi tout de suite de speak() peut ne rien dire :
+  // on n'interrompt que si la voix parle, et on reparle un instant après.
   function dire(texte) {
     if (!synthese || !reglages.sonActif || !texte) return Promise.resolve();
-    synthese.cancel();
     // En minuscules, sinon « CHAT » peut être épelé comme un sigle.
     var u = new SpeechSynthesisUtterance(texte.toLowerCase());
     u.lang = "fr-FR";
     if (voixFr) u.voice = voixFr;
     u.rate = 0.8;
+    repliqueEnCours = u;
     return new Promise(function (resolve) {
       u.onend = resolve;
       u.onerror = resolve;
       // filet de sécurité si onend ne se déclenche pas
-      setTimeout(resolve, 800 + 150 * texte.length);
-      synthese.speak(u);
+      setTimeout(resolve, 900 + 150 * texte.length);
+      if (synthese.speaking || synthese.pending) {
+        synthese.cancel();
+        setTimeout(function () {
+          if (repliqueEnCours === u) synthese.speak(u);
+          else resolve(); // remplacée entre-temps par une autre réplique
+        }, 80);
+      } else {
+        synthese.speak(u);
+      }
     });
   }
 
-  // iOS n'autorise la synthèse vocale qu'après un premier appel pendant un geste.
+  // Au premier geste : jouer un son muet via <audio> fait passer l'iPhone en
+  // mode « lecture de média », ce qui évite que l'interrupteur silencieux
+  // coupe la voix.
+  var SON_MUET = "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAAAAAAAAAAAA==";
   function debloquerSynthese() {
-    if (!synthese) return;
-    var u = new SpeechSynthesisUtterance(" ");
-    u.volume = 0;
-    synthese.speak(u);
+    try {
+      var a = new Audio(SON_MUET);
+      a.setAttribute("playsinline", "");
+      a.play().catch(function () {});
+    } catch (e) {}
   }
 
   // Déblocage sur premier geste utilisateur.
