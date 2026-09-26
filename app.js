@@ -136,6 +136,11 @@
     }
   }
 
+  // Lettres dont le son est dit par la voix de l'appareil plutôt que par le
+  // fichier enregistré (choisi à l'oreille sur ecoute.html). Le fichier sert
+  // de secours si la synthèse vocale n'existe pas.
+  var SON_VOIX_APPAREIL = { o: "o" };
+
   // Joue le son d'une lettre (son OU nom selon réglage). Arrête la précédente.
   function jouerLettre(lettre) {
     if (!reglages.sonActif) return;
@@ -147,6 +152,10 @@
     if (enCoursLettre) {
       try { enCoursLettre.stop(0); } catch (e) {}
       enCoursLettre = null;
+    }
+    if (dossier === "sons" && synthese && SON_VOIX_APPAREIL[l]) {
+      dire(SON_VOIX_APPAREIL[l]);
+      return;
     }
     chargerBuffer(chemin).then(function (buf) {
       enCoursLettre = jouerBuffer(buf);
