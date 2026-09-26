@@ -1,107 +1,66 @@
-# ABC de Léo
+# ABC
 
-Petite application web hors-ligne pour apprendre les lettres et les mots,
-pensée pour un enfant de 5 ans. Aucune dépendance, aucun build, aucune
-ressource externe : uniquement du HTML/CSS/JS "vanilla".
+Petite application web hors ligne pour apprendre les lettres et les mots,
+pensée pour un enfant de 5 ans. Pas de dépendance, pas de build, pas de
+ressource externe : du HTML/CSS/JS simple. Faite pour l'iPhone (écran
+d'accueil), utilisable aussi sur ordinateur avec un vrai clavier.
 
-## Mettre en ligne (GitHub Pages)
+- **Lettres** : clavier A–Z ; chaque lettre s'affiche en grand et dit son
+  nom. Ce qui est tapé est lu par la voix de l'appareil (après une petite
+  pause, ou avec 🔊). Un mot de la liste tapé en entier est reconnu.
+- **Mots** : une image et un mot à recopier ; la touche suivante brille,
+  chaque bonne lettre dit son nom, le mot est lu à la fin.
+- **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil).
 
-1. Poussez ce dépôt sur GitHub.
-2. Dans **Settings → Pages**, choisissez **Deploy from a branch**, branche
-   `main` (après fusion de cette branche), dossier **/ (root)**.
-3. L'application sera disponible à une adresse du type
-   `https://votre-utilisateur.github.io/abc/`.
-   Tous les chemins du code sont **relatifs** (`./...`), donc ça fonctionne
-   même sous ce sous-répertoire.
-
-## Installer sur iPhone (écran d'accueil)
-
-1. Ouvrez le lien ci-dessus dans **Safari** sur l'iPhone.
-2. Appuyez sur le bouton **Partager** (le carré avec la flèche vers le haut).
-3. Choisissez **« Sur l'écran d'accueil »**.
-4. L'icône « ABC » apparaît sur l'écran d'accueil et s'ouvre en plein écran,
-   comme une vraie application, même sans connexion internet une fois
-   qu'elle a été ouverte une première fois (grâce au service worker).
+Tous les chemins sont relatifs (`./…`), l'app fonctionne donc sous un
+sous-dossier. Le service worker (`sw.js`) met tout en cache pour le hors
+ligne : **changez `VERSION` dans `sw.js` à chaque mise à jour**, sinon les
+appareils gardent l'ancienne version.
 
 ## Ajouter des mots
 
-1. Éditez `words.js`, par exemple : `{ mot: "ÉCOLE", emoji: "🏫" }`
-   (ajoutez `famille: true` pour la catégorie « Famille »).
-2. Générez les sons (une seule fois : `pip install piper-tts imageio-ffmpeg numpy`) :
+1. Éditez `words.js`, par exemple `{ mot: "ÉCOLE", emoji: "🏫" }`
+   (`famille: true` pour la catégorie « Famille »).
+2. Générez les sons de secours (une fois : `pip install piper-tts imageio-ffmpeg numpy`) :
    ```
    python3 tools/generate_audio.py
    ```
-   La voix française (Piper « siwis », CC-BY 4.0) est téléchargée
-   automatiquement la première fois. Le script ne crée que les sons
-   manquants et met à jour `audio/manifest.json`.
-   Si un mot est mal prononcé, ajoutez sa prononciation dans
-   `PRONONCIATION` en haut du script.
-3. **Changez `VERSION` dans `sw.js`** (ex. `"v2"`), sinon l'iPhone garde
-   l'ancienne version en cache. Commitez, poussez, puis ouvrez l'app deux
-   fois sur l'iPhone.
+   La voix française Piper « siwis » (CC-BY 4.0) est téléchargée la première
+   fois. Seuls les sons manquants sont créés ; `audio/manifest.json` est mis
+   à jour.
+3. Changez `VERSION` dans `sw.js`.
 
-## Les sons des lettres (méthode syllabique)
+## Voix
 
-> **En pause :** pour l'instant les lettres disent leur **nom** partout (et
-> dans l'écran Mots, chaque bonne lettre dit son nom). Le réglage « Leur son »
-> est caché. Pour le réactiver (par ex. avec vos propres enregistrements dans
-> `audio/sons/<lettre>.mp3`), mettez `SONS_LETTRES_DISPONIBLES = true` dans
-> `app.js` et changez `VERSION` dans `sw.js`.
+- **Mots et texte tapé** : voix française de l'appareil (hors ligne sur
+  iOS). La voix Piper ne sait pas faire les voyelles nasales (« main »
+  devient « mai »). Les mots listés dans `MOTS_ENREGISTRES` (`app.js`),
+  par exemple des noms propres mal lus par l'appareil, gardent leur fichier
+  `audio/mots/<id>.mp3`. Ces fichiers servent aussi de secours.
+- **Noms des lettres** : `audio/noms/<lettre>.mp3` (Piper).
+- **Sons des lettres** (« sss », « mmm », « beu ») : les sons générés
+  (`audio/sons/`) ne sont pas assez bons, ils sont désactivés
+  (`SONS_LETTRES_DISPONIBLES = false` dans `app.js`).
 
-Par défaut les lettres disent leur **son** (« sss », « mmm », « beu »).
-Les réglages (appui long 2 s sur ⚙️ en bas de l'accueil) permettent de
-passer au **nom** (« esse »). Le H ne fait pas de bruit : il dit son nom.
-Le W dit aussi son nom.
+## Enregistrer ses propres sons de lettres
 
-Comment c'est fabriqué : les voyelles et « beu/deu/keu… » sont lues par la
-voix. Les consonnes continues (f, j, l, m, n, r, s, v, z) sont extraites
-d'un « a-sss-a » puis allongées, parce que la voix ne sait pas bien dire
-un son isolé.
+Réglages → **🎙️ Enregistrer les sons** (`enregistrer.html`). Touchez une
+lettre, enregistrez son son avec le micro, réécoutez. Les enregistrements
+restent **sur l'appareil** (IndexedDB) : il faut donc enregistrer depuis
+l'app installée elle-même. Dès qu'un son est enregistré, le réglage
+« Les lettres disent : leur son » apparaît ; les lettres sans
+enregistrement disent leur nom.
 
-## Voix des mots
+## Outils
 
-Les mots sont dits par la voix française de l'iPhone (hors ligne), car la
-voix des enregistrements ne sait pas faire les voyelles nasales (« main »
-devenait « mai »). Les mots listés dans `MOTS_ENREGISTRES` (`app.js`), comme
-BURCKHARDT, gardent leur enregistrement. Les fichiers `audio/mots/` servent
-de secours.
-
-## Lire ce qui est tapé
-
-Sur l'écran Lettres, la suite de lettres tapée est lue par la voix de
-l'iPhone (hors ligne) après une petite pause, ou en touchant 🔊. Réglage :
-« Après chaque lettre » ou « Seulement avec 🔊 ». Les mots de la liste sont
-lus avec leur enregistrement.
-
-## Choisir les sons des lettres
-
-`ecoute.html` (ex. `https://vburckhardt.github.io/abc/ecoute.html`) propose
-plusieurs versions de chaque son (générées par `tools/variantes.py`) et la
-voix de l'iPhone. Choisissez, copiez le résumé, puis recopiez la version
-retenue dans `audio/sons/<lettre>.mp3`.
+- `tools/generate_audio.py` : génère les fichiers audio (Piper, hors ligne).
+- `tools/variantes.py` + `ecoute.html` : plusieurs versions générées de
+  chaque son de lettre, à comparer à l'oreille.
 
 ## Fichiers
 
-- `index.html`, `style.css`, `app.js` — l'application
-- `words.js` — la liste des mots
-- `sw.js`, `manifest.webmanifest`, `icon-*.png` — hors-ligne et icône iPhone
-- `audio/` — sons générés (`sons/`, `noms/`, `mots/`, `bravo.mp3`)
-- `tools/generate_audio.py` — générateur des sons
-
----
-
-## English (short version)
-
-Offline vanilla-JS PWA (no framework/build/CDN) teaching a 5-year-old French
-child letters and short words, primarily on iPhone (Safari "Add to Home
-Screen") and also usable on desktop with a keyboard.
-
-- Enable **GitHub Pages** from the branch root (Settings → Pages).
-- Open the resulting `https://user.github.io/abc/` URL in iPhone Safari,
-  then Share → "Sur l'écran d'accueil" to install it.
-- To add words: edit `words.js`, then run `python3 tools/generate_audio.py`
-  to generate the matching MP3s and refresh `audio/manifest.json`.
-- All paths are relative so the app works under any GitHub Pages sub-path.
-- Bump `VERSION` in `sw.js` on every update so installed copies refresh.
-- Letter sounds are generated offline with the Piper French voice; continuous
-  consonants are cut from "a-C-a" carriers and time-stretched.
+- `index.html`, `style.css`, `app.js` : l'application
+- `words.js` : la liste des mots
+- `enregistrer.html`, `enregistrements.js` : enregistrement des sons
+- `sw.js`, `manifest.webmanifest`, `icon-*.png` : hors ligne et icône
+- `audio/` : sons générés (`noms/`, `sons/`, `mots/`, `bravo.mp3`, `essai/`)
