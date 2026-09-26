@@ -532,3 +532,5 @@ a { color: inherit; }
 }
 /* Touche aidée (fond jaune) : texte foncé dans les deux modes. */
 .touche.glow { color: var(--encre-fixe); }
+
+[hidden] { display: none !important; }
