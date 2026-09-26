@@ -52,6 +52,14 @@ voix. Les consonnes continues (f, j, l, m, n, r, s, v, z) sont extraites
 d'un « a-sss-a » puis allongées, parce que la voix ne sait pas bien dire
 un son isolé.
 
+## Voix des mots
+
+Les mots sont dits par la voix française de l'iPhone (hors ligne), car la
+voix des enregistrements ne sait pas faire les voyelles nasales (« main »
+devenait « mai »). Les mots listés dans `MOTS_ENREGISTRES` (`app.js`), comme
+BURCKHARDT, gardent leur enregistrement. Les fichiers `audio/mots/` servent
+de secours.
+
 ## Lire ce qui est tapé
 
 Sur l'écran Lettres, la suite de lettres tapée est lue par la voix de

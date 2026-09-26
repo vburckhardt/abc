@@ -1,7 +1,7 @@
 // ===================== ABC de Léo — Service Worker =====================
 // Stratégie "cache-first" simple, hors-ligne complet une fois installé.
 // Change VERSION à chaque déploiement pour invalider l'ancien cache.
-const VERSION = "v3";
+const VERSION = "v5";
 const CACHE_NAME = "abc-de-leo-" + VERSION;
 
 // Fichiers de l'app shell (chemins relatifs, valables sous un sous-répertoire

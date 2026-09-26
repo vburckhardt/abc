@@ -33,19 +33,24 @@ VOICE_DIR = os.path.join(ROOT, "tools", ".voice")
 VOICE_URL = "https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-fr-siwis-medium.tar.gz"
 SR = 22050
 
-# Son syllabique de chaque lettre.
-#   ("stretch", phonème) : consonne continue découpée puis allongée
-#   ("text", texte)       : syllabe/voyelle lue par la voix (« Beu. »)
-#   ("ph", phonèmes)      : idem mais en phonèmes (accent ˈ avant la voyelle)
-#   ("name",)             : pas de son propre, on dit le nom (H, W)
+# Son syllabique de chaque lettre (choisis à l'oreille sur ecoute.html).
+#   ("ph", phonèmes)  : voyelle ou « beu/deu… » en phonèmes (accent ˈ avant la voyelle)
+#   ("cut", phonème)  : consonne continue découpée dans « a-sss-a », non allongée
+#   ("slow", texte)   : syllabe lue lentement (« Meu. »)
+#   ("text", texte)   : syllabe lue normalement (« Keu. »)
+#   ("stretch", ph.)  : consonne découpée puis allongée (ancienne méthode)
+#   ("x",)            : « ksss »
+#   ("name",)         : pas de son propre, on dit le nom (H)
+# O est dit par la voix de l'iPhone dans l'app (voir SON_VOIX_APPAREIL dans
+# app.js) ; le fichier sert de secours.
 SONS = {
-    "a": ("text", "A."), "b": ("text", "Beu."), "c": ("text", "Keu."), "d": ("text", "Deu."),
-    "e": ("ph", "ˈø."), "f": ("stretch", "f"), "g": ("text", "Gueu."), "h": ("name",),
-    "i": ("text", "I."), "j": ("stretch", "ʒ"), "k": ("text", "Keu."), "l": ("stretch", "l"),
-    "m": ("stretch", "m"), "n": ("stretch", "n"), "o": ("text", "O."), "p": ("text", "Peu."),
-    "q": ("text", "Keu."), "r": ("stretch", "ʁ"), "s": ("stretch", "s"), "t": ("text", "Teu."),
-    "u": ("text", "U."), "v": ("stretch", "v"), "w": ("name",), "x": ("x",),
-    "y": ("text", "I."), "z": ("stretch", "z"),
+    "a": ("ph", "ˈa."), "b": ("ph", "bˈə."), "c": ("ph", "kˈə."), "d": ("ph", "dˈə."),
+    "e": ("ph", "ˈø."), "f": ("cut", "f"), "g": ("ph", "ɡˈə."), "h": ("name",),
+    "i": ("ph", "ˈi."), "j": ("slow", "Jeu."), "k": ("ph", "kˈə."), "l": ("slow", "Leu."),
+    "m": ("slow", "Meu."), "n": ("slow", "Neu."), "o": ("ph", "ˈo."), "p": ("ph", "pˈə."),
+    "q": ("text", "Keu."), "r": ("slow", "Reu."), "s": ("cut", "s"), "t": ("ph", "tˈə."),
+    "u": ("ph", "ˈy."), "v": ("slow", "Veu."), "w": ("slow", "Veu."), "x": ("x",),
+    "y": ("ph", "ˈi."), "z": ("slow", "Zeu."),
 }
 VOICED = set("ʒlmnʁvz")
 # Les consonnes sifflantes sont naturellement plus faibles que les voyelles.
@@ -96,8 +101,9 @@ class Synth:
         cfg = SynthesisConfig(length_scale=length, noise_w_scale=0.3)
         return self.v.phoneme_ids_to_audio(ids, cfg).astype(np.float64)
 
-    def text(self, t):
-        return np.concatenate([c.audio_float_array for c in self.v.synthesize(t)]).astype(np.float64)
+    def text(self, t, length=1.0):
+        cfg = SynthesisConfig(length_scale=length)
+        return np.concatenate([c.audio_float_array for c in self.v.synthesize(t, syn_config=cfg)]).astype(np.float64)
 
 
 def spectra(a, n=512, hop=128):
@@ -185,14 +191,23 @@ def make_son(s, letter):
     if kind[0] == "text":
         return fade(trim(s.text(kind[1])), 0.005, 0.05)
     if kind[0] == "ph":
-        return fade(trim(s.ph(kind[1], 1.3)), 0.005, 0.05)
+        voyelle = kind[1].startswith("ˈ")
+        return fade(trim(s.ph(kind[1], 1.5 if voyelle else 1.3)), 0.005, 0.05)
+    if kind[0] == "slow":
+        return fade(trim(s.text(kind[1], 1.4)), 0.005, 0.05)
+    if kind[0] == "cut":
+        a = s.ph("aˈ" + kind[1] + "ːa.", 1.8)
+        b, e = cut_consonant(a)
+        return fade(np.concatenate([a[b:e], np.zeros(int(0.05 * SR))]), 0.01, 0.06)
     if kind[0] == "name":
         return trim(s.ph(NOMS[letter]))
     if kind[0] == "x":  # « ksss » : le k du carrier puis un s allongé
         a = s.ph("aˈksːa.", 1.5)
         b, e = cut_consonant(a)
         k = a[b: b + int(0.06 * SR)]
-        ss = make_son(s, "s")
+        a2 = s.ph("aˈsːa.", 1.5)
+        b2, e2 = cut_consonant(a2)
+        ss = fade(stretch(a2[b2:e2], False))
         return fade(np.concatenate([k, ss[int(0.02 * SR):]]), 0.005, 0.08)
     c = kind[1]
     a = s.ph("aˈ" + c + "ːa.", 1.5)

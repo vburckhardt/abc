@@ -136,6 +136,11 @@
     }
   }
 
+  // Lettres dont le son est dit par la voix de l'appareil plutôt que par le
+  // fichier enregistré (choisi à l'oreille sur ecoute.html). Le fichier sert
+  // de secours si la synthèse vocale n'existe pas.
+  var SON_VOIX_APPAREIL = { o: "o" };
+
   // Joue le son d'une lettre (son OU nom selon réglage). Arrête la précédente.
   function jouerLettre(lettre) {
     if (!reglages.sonActif) return;
@@ -148,14 +153,27 @@
       try { enCoursLettre.stop(0); } catch (e) {}
       enCoursLettre = null;
     }
+    if (dossier === "sons" && synthese && SON_VOIX_APPAREIL[l]) {
+      dire(SON_VOIX_APPAREIL[l]);
+      return;
+    }
     chargerBuffer(chemin).then(function (buf) {
       enCoursLettre = jouerBuffer(buf);
     });
   }
 
-  // Joue un mot par son id normalisé.
-  function jouerMot(id) {
+  // Les mots sont dits par la voix française de l'appareil : la voix des
+  // enregistrements (Piper « siwis ») ne sait pas faire les voyelles nasales
+  // (« main » devient « mai »). Exceptions : les mots listés ici gardent leur
+  // enregistrement (noms propres que la voix de l'appareil prononcerait mal).
+  // Les enregistrements servent aussi de secours sans synthèse vocale.
+  var MOTS_ENREGISTRES = { burckhardt: true };
+
+  // Joue un mot (tel qu'affiché, avec ses accents). Promesse résolue à la fin.
+  function jouerMot(mot) {
     if (!reglages.sonActif) return Promise.resolve();
+    var id = normaliserId(mot);
+    if (synthese && !MOTS_ENREGISTRES[id]) return dire(mot);
     var chemin = "./audio/mots/" + id + ".mp3";
     return chargerBuffer(chemin).then(function (buf) {
       var src = jouerBuffer(buf);
@@ -181,8 +199,8 @@
   }
 
   // Joue mot puis bravo, l'un après l'autre.
-  function jouerSequenceMotBravo(id) {
-    return jouerMot(id).then(jouerBravo);
+  function jouerSequenceMotBravo(mot) {
+    return jouerMot(mot).then(jouerBravo);
   }
 
   function precharger26Lettres() {
@@ -247,15 +265,22 @@
     if ("onvoiceschanged" in synthese) synthese.onvoiceschanged = choisirVoixFr;
   }
 
+  // Dit un texte ; la promesse est résolue quand la voix a fini.
   function dire(texte) {
-    if (!synthese || !reglages.sonActif || !texte) return;
+    if (!synthese || !reglages.sonActif || !texte) return Promise.resolve();
     synthese.cancel();
     // En minuscules, sinon « CHAT » peut être épelé comme un sigle.
     var u = new SpeechSynthesisUtterance(texte.toLowerCase());
     u.lang = "fr-FR";
     if (voixFr) u.voice = voixFr;
     u.rate = 0.8;
-    synthese.speak(u);
+    return new Promise(function (resolve) {
+      u.onend = resolve;
+      u.onerror = resolve;
+      // filet de sécurité si onend ne se déclenche pas
+      setTimeout(resolve, 800 + 150 * texte.length);
+      synthese.speak(u);
+    });
   }
 
   // iOS n'autorise la synthèse vocale qu'après un premier appel pendant un geste.
@@ -560,7 +585,7 @@
     void motTrouveEl.offsetWidth;
     motTrouveEl.classList.add("affiche");
     lancerConfettis();
-    jouerMot(normaliserId(entree.mot));
+    jouerMot(entree.mot);
     setTimeout(function () {
       bandeLettres = "";
       bandeLettresEl.textContent = "";
@@ -661,8 +686,7 @@
       if (positionActuelle >= lettresMot.length) {
         // Mot complet !
         mettreAJourGlowClavier();
-        var idMot = normaliserId(motActuel.mot);
-        jouerSequenceMotBravo(idMot).then(function () {});
+        jouerSequenceMotBravo(motActuel.mot);
         lancerConfettis();
         timerMotSuivant = setTimeout(demarrerNouveauMot, 2500);
       } else {
@@ -681,7 +705,7 @@
   construireClavier(clavierMotsEl, false, surToucheMots);
 
   motEmojiEl.addEventListener("click", function () {
-    if (motActuel) jouerMot(normaliserId(motActuel.mot));
+    if (motActuel) jouerMot(motActuel.mot);
   });
 
   btnMotSuivant.addEventListener("click", function () {
