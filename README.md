@@ -12,12 +12,17 @@ utilisable aussi sur ordinateur avec un vrai clavier.
 - **Mots** : une image et un mot à recopier ; la touche suivante brille,
   chaque bonne lettre dit son nom, le mot est lu à la fin, puis « Bravo ! ».
 - **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil) :
-  catégories de mots, son.
+  catégories de mots, son, choix de la voix.
 
 ## Voix
 
 Tout est dit par la voix française de l'appareil (`speechSynthesis`, hors
-ligne sur iOS). Les noms des lettres sont écrits en toutes lettres pour la
+ligne sur iOS). Les voix « fantaisie » très robotiques de l'iPhone (Eddy,
+Grandma, Rocko…) sont écartées ; l'app prend la meilleure voix française
+trouvée (premium, puis améliorée, puis standard). On peut aussi la choisir
+dans les Réglages. Pour une voix plus naturelle sur iPhone : Réglages ›
+Accessibilité › Contenu énoncé › Voix › Français, télécharger une voix
+« améliorée » ou « premium ». Les noms des lettres sont écrits en toutes lettres pour la
 voix (`NOMS_LETTRES` dans `app.js` : « bé », « ji », « esse »…). Un mot mal
 prononcé peut recevoir une orthographe pour la voix (`dire` dans
 `words.js`).

@@ -546,3 +546,21 @@ a { color: inherit; }
   font-size: 16px;
 }
 .etat-voix { margin: 6px 4px 0; font-size: 13px; opacity: 0.75; }
+.choix-voix {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  font-size: 17px;
+}
+.choix-voix select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 16px;
+  color: var(--encre);
+  background: var(--carte);
+  border: 2px solid var(--creme-fonce);
+  border-radius: 12px;
+}
+.conseil-voix { margin: 8px 4px 0; font-size: 13px; }

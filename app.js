@@ -19,7 +19,8 @@
   // ----------------------------------------------------------------
   var REGLAGES_DEFAUT = {
     categories: { courts: true, moyens: false, longs: false, famille: true },
-    sonActif: true
+    sonActif: true,
+    voix: "" // voiceURI choisie dans les réglages ; "" = automatique
   };
 
   var reglages = chargerReglages();
@@ -31,7 +32,8 @@
       var parse = JSON.parse(brut);
       return {
         categories: Object.assign(clone(REGLAGES_DEFAUT.categories), parse.categories || {}),
-        sonActif: parse.sonActif !== false
+        sonActif: parse.sonActif !== false,
+        voix: typeof parse.voix === "string" ? parse.voix : ""
       };
     } catch (e) {
       return clone(REGLAGES_DEFAUT);
@@ -127,22 +129,47 @@
 
   // ------------------------------------------------------------------
   // Voix de l'appareil (speechSynthesis)
+  // L'iPhone propose aussi des voix « fantaisie » très robotiques (Eddy,
+  // Grandma, Rocko…, moteur « Eloquence ») : elles sont écartées. Parmi les
+  // autres, on préfère une voix premium ou améliorée (téléchargée dans les
+  // réglages de l'iPhone), puis fr-FR, puis installée localement (hors
+  // ligne). Le parent peut aussi choisir la voix dans les réglages.
   // ------------------------------------------------------------------
   var synthese = window.speechSynthesis || null;
   var voixFr = null;
 
+  var NOMS_FANTAISIE = /^(eddy|flo|grandma|grandpa|grand-m[eè]re|grand-p[eè]re|reed|rocko|sandy|shelley)\b/i;
+
+  function estFantaisie(v) {
+    return /eloquence/i.test(v.voiceURI) || NOMS_FANTAISIE.test(v.name);
+  }
+
+  // 2 = premium, 1 = améliorée / naturelle, 0 = standard.
+  function qualiteVoix(v) {
+    var id = v.voiceURI + " " + v.name;
+    if (/premium/i.test(id)) return 2;
+    if (/enhanced|am[ée]lior[ée]e|natural|neural/i.test(id)) return 1;
+    return 0;
+  }
+
+  function noteVoix(v) {
+    return qualiteVoix(v) * 4 + (/fr[-_]FR/i.test(v.lang) ? 2 : 0) + (v.localService ? 1 : 0);
+  }
+
+  // Voix françaises utilisables, la meilleure d'abord.
+  function voixFrancaises() {
+    if (!synthese) return [];
+    return synthese.getVoices().filter(function (v) {
+      return /^fr/i.test(v.lang) && !estFantaisie(v);
+    }).sort(function (a, b) {
+      return noteVoix(b) - noteVoix(a);
+    });
+  }
+
   function choisirVoixFr() {
-    if (!synthese) return;
-    var voix = synthese.getVoices().filter(function (v) {
-      return /^fr/i.test(v.lang);
-    });
-    // Préférence : fr-FR, installée localement (hors ligne).
-    voix.sort(function (a, b) {
-      var sa = (/fr[-_]FR/i.test(a.lang) ? 2 : 0) + (a.localService ? 1 : 0);
-      var sb = (/fr[-_]FR/i.test(b.lang) ? 2 : 0) + (b.localService ? 1 : 0);
-      return sb - sa;
-    });
-    voixFr = voix[0] || null;
+    var voix = voixFrancaises();
+    var choisie = voix.filter(function (v) { return v.voiceURI === reglages.voix; })[0];
+    voixFr = choisie || voix[0] || null;
   }
   if (synthese) {
     choisirVoixFr();
@@ -161,11 +188,13 @@
       texteEnAttente = texte;
       return Promise.resolve();
     }
+    // Sur iPhone, la liste des voix peut être vide au chargement.
+    if (!voixFr) choisirVoixFr();
     // En minuscules, sinon « CHAT » peut être épelé comme un sigle.
     var u = new SpeechSynthesisUtterance(texte.toLowerCase());
     u.lang = "fr-FR";
     if (voixFr) u.voice = voixFr;
-    u.rate = 0.8;
+    u.rate = 0.9;
     repliqueEnCours = u;
     return new Promise(function (resolve) {
       u.onend = resolve;
@@ -309,6 +338,7 @@
 
   function ouvrirReglages() {
     remplirFormulaireReglages();
+    remplirChoixVoix();
     afficherEtatVoix();
     overlayReglages.classList.remove("ecran-actif-masque");
   }
@@ -346,6 +376,37 @@
     document.getElementById(id).addEventListener("change", surChangementCategorie);
   });
 
+  // Choix de la voix : « Automatique » (la meilleure trouvée) ou une voix
+  // française précise.
+  var choixVoixEl = document.getElementById("choix-voix");
+
+  function nomVoix(v) {
+    var q = /premium|enhanced|am[ée]lior/i.test(v.name) ? "" : ["", " · améliorée", " · premium"][qualiteVoix(v)];
+    var pays = /fr[-_]FR/i.test(v.lang) ? "" : " (" + v.lang + ")";
+    return v.name + pays + q;
+  }
+
+  function remplirChoixVoix() {
+    choisirVoixFr();
+    var voix = voixFrancaises();
+    choixVoixEl.innerHTML = "";
+    choixVoixEl.add(new Option("Automatique" + (voix[0] ? " (" + nomVoix(voix[0]) + ")" : ""), ""));
+    voix.forEach(function (v) {
+      choixVoixEl.add(new Option(nomVoix(v), v.voiceURI));
+    });
+    choixVoixEl.value = voixFr && voixFr.voiceURI === reglages.voix ? reglages.voix : "";
+    // Conseil affiché seulement si l'appareil n'a aucune voix de qualité.
+    document.getElementById("conseil-voix").hidden =
+      !synthese || voix.some(function (v) { return qualiteVoix(v) > 0; });
+  }
+
+  choixVoixEl.addEventListener("change", function () {
+    reglages.voix = choixVoixEl.value;
+    sauverReglages();
+    choisirVoixFr();
+    dire("Bonjour ! a, bé, cé.");
+  });
+
   // État de la voix (pour le parent : savoir pourquoi il n'y aurait pas de son).
   function afficherEtatVoix() {
     var el = document.getElementById("etat-voix");
@@ -353,9 +414,7 @@
       el.textContent = "Voix de l'appareil : indisponible dans ce navigateur.";
       return;
     }
-    var fr = synthese.getVoices().filter(function (v) { return /^fr/i.test(v.lang); });
-    el.textContent = "Voix : " + (voixFr ? voixFr.name : "française par défaut") +
-      " · " + fr.length + " voix française(s) · " +
+    el.textContent = voixFrancaises().length + " voix française(s) · " +
       (voixDebloquee ? "activée" : "pas encore activée") +
       (reglages.sonActif ? "" : " · son coupé dans les réglages");
   }
