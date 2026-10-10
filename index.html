@@ -105,13 +105,14 @@
         <input type="checkbox" id="son-actif" checked>
         <span>Activé</span>
       </label>
-      <label class="choix-voix">
-        <span>Voix</span>
-        <select id="choix-voix"></select>
-      </label>
+      <div id="voix-appareil" hidden>
+        <label class="choix-voix">
+          <span>Voix</span>
+          <select id="choix-voix"></select>
+        </label>
+      </div>
       <button type="button" class="btn-tester-voix" id="btn-tester-voix">🔊 Tester la voix</button>
       <p class="etat-voix" id="etat-voix"></p>
-      <p class="conseil-voix" id="conseil-voix" hidden>Pour une voix plus naturelle sur iPhone : Réglages › Accessibilité › Contenu énoncé › Voix › Français, téléchargez une voix « améliorée » ou « premium », puis rouvrez l'app.</p>
     </fieldset>
   </div>
 </div>
@@ -122,6 +123,7 @@
 <script src="./words.js"></script>
 <script src="./version.js"></script>
 <script src="./syllabes.js"></script>
+<script src="./sons.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>

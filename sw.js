@@ -5,6 +5,8 @@
 // à chaque mise à jour.
 importScripts("./version.js");
 const CACHE_NAME = "abc-v" + self.APP_VERSION;
+// Sons enregistrés (audio/…) : cache à part, gardé d'une version à l'autre.
+const CACHE_SONS = "abc-sons";
 
 // Chemins relatifs : fonctionne sous un sous-dossier (ex. /abc/).
 const FICHIERS_APP = [
@@ -15,6 +17,7 @@ const FICHIERS_APP = [
   "./app.js",
   "./words.js",
   "./syllabes.js",
+  "./sons.js",
   "./manifest.webmanifest",
   "./icon-180.png",
   "./icon-192.png",
@@ -28,16 +31,37 @@ self.addEventListener("install", function (event) {
       return Promise.all(FICHIERS_APP.map(function (f) {
         return cache.add(new Request(f, { cache: "reload" })).catch(function () {});
       }));
-    })
+    }).then(mettreSonsEnCache)
   );
   self.skipWaiting();
 });
+
+// Met en cache les sons de audio/liste.tsv qui n'y sont pas encore (hors
+// ligne complet sans tout retélécharger à chaque version).
+function mettreSonsEnCache() {
+  return fetch("./audio/liste.tsv", { cache: "no-store" }).then(function (r) {
+    return r.ok ? r.text() : "";
+  }).then(function (liste) {
+    var fichiers = liste.split("\n").map(function (ligne) {
+      return ligne.split("\t")[0].trim();
+    }).filter(function (f) {
+      return f && f.charAt(0) !== "#";
+    });
+    return caches.open(CACHE_SONS).then(function (cache) {
+      return Promise.all(fichiers.map(function (f) {
+        return cache.match(f).then(function (deja) {
+          return deja || cache.add(f).catch(function () {});
+        });
+      }));
+    });
+  }).catch(function () {});
+}
 
 self.addEventListener("activate", function (event) {
   event.waitUntil(
     caches.keys().then(function (noms) {
       return Promise.all(noms.filter(function (n) {
-        return n !== CACHE_NAME;
+        return n !== CACHE_NAME && n !== CACHE_SONS;
       }).map(function (n) {
         return caches.delete(n);
       }));
@@ -56,11 +80,13 @@ function depuisCache(requete) {
 
 self.addEventListener("fetch", function (event) {
   var requete = event.request;
-  if (requete.method !== "GET" || new URL(requete.url).origin !== self.location.origin) return;
+  var url = new URL(requete.url);
+  if (requete.method !== "GET" || url.origin !== self.location.origin) return;
+  var nomCache = url.pathname.indexOf("/audio/") !== -1 ? CACHE_SONS : CACHE_NAME;
   var reseau = fetch(requete, { cache: "no-store" }).then(function (reponse) {
     if (reponse && reponse.ok) {
       var copie = reponse.clone();
-      caches.open(CACHE_NAME).then(function (cache) {
+      caches.open(nomCache).then(function (cache) {
         cache.put(requete, copie);
       });
     }

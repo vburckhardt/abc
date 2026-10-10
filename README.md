@@ -16,16 +16,24 @@ utilisable aussi sur ordinateur avec un vrai clavier.
 
 ## Voix
 
-Tout est dit par la voix française de l'appareil (`speechSynthesis`, hors
-ligne sur iOS). Les voix « fantaisie » très robotiques de l'iPhone (Eddy,
-Grandma, Rocko…) sont écartées ; l'app prend la meilleure voix française
-trouvée (premium, puis améliorée, puis standard). On peut aussi la choisir
-dans les Réglages. Pour une voix plus naturelle sur iPhone : Réglages ›
-Accessibilité › Contenu énoncé › Voix › Français, télécharger une voix
-« améliorée » ou « premium ». Les noms des lettres sont écrits en toutes lettres pour la
-voix (`NOMS_LETTRES` dans `app.js` : « bé », « ji », « esse »…). Un mot mal
-prononcé peut recevoir une orthographe pour la voix (`dire` dans
-`words.js`).
+Tout ce que dit l'app (noms des lettres, syllabes, mots, « Bravo ! ») est
+enregistré à l'avance avec une voix naturelle (Audrey Premium du Mac) dans
+`audio/`, et joué hors ligne. Sur iPhone, une page web ne peut utiliser que
+les voix de base (Thomas, Amélie), pas les voix premium téléchargées. Un son
+qui manque est dit par la voix de l'appareil (choix dans les Réglages).
+
+`sons.js` donne pour chaque son le texte dit et le fichier : noms des
+lettres en toutes lettres (« bé », « ji », « esse »…), mot en minuscules ou
+orthographe pour la voix (`dire` dans `words.js`).
+
+Enregistrer les sons, sur un Mac :
+
+1. Réglages Système › Accessibilité › Contenu énoncé › Voix du système ›
+   Gérer les voix… › Français : télécharger Audrey (Premium).
+2. `node tools/liste_sons.js` si `words.js` ou `syllabes.js` a changé
+   (écrit `audio/liste.tsv`).
+3. `bash tools/voix_mac.sh` : enregistre les sons manquants (`audio/…`).
+   Autre voix : `bash tools/voix_mac.sh "Thomas (Premium)"`.
 
 ## Mettre à jour
 
@@ -40,6 +48,9 @@ Dans `words.js` : `{ mot: "ÉCOLE", emoji: "🏫" }` (`famille: true` pour la
 catégorie « Famille »). Chaque mot doit avoir une image claire pour un
 enfant qui ne lit pas encore.
 
+Puis enregistrer son son : `node tools/liste_sons.js`, puis
+`bash tools/voix_mac.sh` sur le Mac (voir « Voix »).
+
 ## Syllabes
 
 `syllabes.js` liste les 594 syllabes valides (A–Z, 2-3 lettres), d'après
@@ -51,5 +62,7 @@ le syllabaire [Syllabux](https://forge.apps.education.fr/educajou/syllabux)
 
 - `index.html`, `style.css`, `app.js` : l'application
 - `words.js` : les mots ; `syllabes.js` : les syllabes
+- `sons.js`, `audio/` : les sons enregistrés (`audio/liste.tsv` : la liste)
+- `tools/` : `liste_sons.js`, `voix_mac.sh` (sons), `import_syllabes.py`
 - `version.js`, `sw.js`, `manifest.webmanifest`, `icon-*.png` : version,
   hors ligne, icône

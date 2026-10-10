@@ -54,9 +54,10 @@
 
   // ==================================================================
   // SONS
-  // Tout est dit par la voix française de l'appareil (speechSynthesis, hors
-  // ligne sur iOS) : noms des lettres, syllabes, mots, « Bravo ! ». Seul le
-  // « bonk » d'erreur est un son synthétisé (Web Audio).
+  // Noms des lettres, syllabes, mots et « Bravo ! » sont des sons enregistrés
+  // (audio/…, voir sons.js et tools/voix_mac.sh), joués avec Web Audio. Un
+  // son qui manque est dit par la voix de l'appareil (speechSynthesis). Le
+  // « bonk » d'erreur est synthétisé.
   // ==================================================================
   var ctx = null;
 
@@ -70,7 +71,8 @@
 
   function debloquerAudio() {
     var c = obtenirContexte();
-    if (c && c.state === "suspended") {
+    // « suspended » au départ, « interrupted » après un appel sur iPhone.
+    if (c && c.state !== "running") {
       c.resume().catch(function () {});
     }
     // Permet au son de jouer même avec l'interrupteur silencieux sur iPhone.
@@ -81,29 +83,89 @@
     } catch (e) {}
   }
 
-  // Noms des lettres écrits pour la voix de l'appareil (une lettre seule
-  // peut être mal lue ; « bé », « esse »… se lisent comme du français).
-  var NOMS_LETTRES = {
-    a: "a", b: "bé", c: "cé", d: "dé", e: "eu", f: "effe", g: "gé",
-    h: "hache", i: "i", j: "ji", k: "ka", l: "elle", m: "emme", n: "enne",
-    o: "o", p: "pé", q: "ku", r: "erre", s: "esse", t: "té", u: "u",
-    v: "vé", w: "double vé", x: "ixe", y: "i grec", z: "zède"
-  };
+  var SONS = window.SONS;
+  var tampons = new Map(); // fichier -> promesse d'AudioBuffer (null : absent)
+  var MAX_TAMPONS = 120; // au-delà, les moins récents sont oubliés
+  var sourceEnCours = null;
+  var numeroSon = 0; // chaque nouveau son remplace le précédent
 
-  // Dit le nom d'une lettre (coupe ce qui était en train d'être dit).
-  function jouerLettre(lettre) {
-    var l = lettrePlate(lettre).toLowerCase();
-    if (NOMS_LETTRES[l]) dire(NOMS_LETTRES[l]);
+  function chargerSon(son) {
+    var p = tampons.get(son.fichier);
+    if (p) {
+      // remis en dernier : les sons fréquents (lettres) restent en mémoire
+      tampons.delete(son.fichier);
+      tampons.set(son.fichier, p);
+      return p;
+    }
+    var c = obtenirContexte();
+    p = !c || !window.fetch ? Promise.resolve(null) : fetch(son.fichier).then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.arrayBuffer();
+    }).then(function (donnees) {
+      // Forme à rappels (anciens Safari) ; la promesse rendue par les
+      // navigateurs récents est ignorée.
+      return new Promise(function (ok, erreur) {
+        var p = c.decodeAudioData(donnees, ok, erreur);
+        if (p && p.catch) p.catch(function () {});
+      });
+    }).catch(function () {
+      return null;
+    });
+    tampons.set(son.fichier, p);
+    if (tampons.size > MAX_TAMPONS) tampons.delete(tampons.keys().next().value);
+    return p;
   }
 
-  // Dit un mot de la liste. `dire` (facultatif dans words.js) donne une
-  // orthographe pour la voix quand le mot est mal lu (noms propres).
+  // Joue un son (coupe ce qui était en train d'être dit) ; la promesse est
+  // résolue à la fin du son.
+  function jouerSon(son) {
+    if (!reglages.sonActif || !son.texte) return Promise.resolve();
+    var numero = ++numeroSon;
+    arreterSource();
+    return chargerSon(son).then(function (tampon) {
+      if (numero !== numeroSon) return; // remplacé entre-temps
+      if (!tampon) return dire(son.texte);
+      if (synthese && (synthese.speaking || synthese.pending)) synthese.cancel();
+      return new Promise(function (resolve) {
+        var src = ctx.createBufferSource();
+        src.buffer = tampon;
+        src.connect(ctx.destination);
+        src.onended = resolve;
+        sourceEnCours = src;
+        src.start();
+        // filet de sécurité si onended ne vient pas (son pas encore débloqué)
+        setTimeout(resolve, tampon.duration * 1000 + 500);
+      });
+    });
+  }
+
+  function arreterSource() {
+    if (!sourceEnCours) return;
+    try { sourceEnCours.stop(); } catch (e) {}
+    sourceEnCours = null;
+  }
+
+  // Coupe tout (changement d'écran, app en arrière-plan).
+  function arreterParole() {
+    numeroSon++;
+    arreterSource();
+    if (synthese) synthese.cancel();
+  }
+
+  function jouerLettre(lettre) {
+    jouerSon(SONS.lettre(lettre));
+  }
+
   function jouerMot(entree) {
-    return dire(entree.dire || entree.mot);
+    return jouerSon(SONS.mot(entree));
   }
 
   function jouerSequenceMotBravo(entree) {
-    return jouerMot(entree).then(function () { return dire("Bravo !"); });
+    var lecture = jouerMot(entree);
+    var numero = numeroSon;
+    return lecture.then(function () {
+      if (numero === numeroSon) return jouerSon(SONS.bravo);
+    });
   }
 
   // Petit son d'erreur synthétisé (oscillateur), pas de fichier.
@@ -178,7 +240,8 @@
 
   var repliqueEnCours = null; // garde une référence (sinon le navigateur peut l'oublier)
 
-  // Dit un texte ; la promesse est résolue quand la voix a fini.
+  // Dit un texte avec la voix de l'appareil (quand le son enregistré manque) ;
+  // la promesse est résolue quand la voix a fini.
   // Sur iPhone, cancel() suivi tout de suite de speak() peut ne rien dire :
   // on n'interrompt que si la voix parle, et on reparle un instant après.
   function dire(texte) {
@@ -278,7 +341,7 @@
       demarrerNouveauMot();
     } else {
       annulerTimersMots();
-      if (synthese) synthese.cancel();
+      arreterParole();
     }
   }
 
@@ -338,7 +401,6 @@
 
   function ouvrirReglages() {
     remplirFormulaireReglages();
-    remplirChoixVoix();
     afficherEtatVoix();
     overlayReglages.classList.remove("ecran-actif-masque");
   }
@@ -395,9 +457,6 @@
       choixVoixEl.add(new Option(nomVoix(v), v.voiceURI));
     });
     choixVoixEl.value = voixFr && voixFr.voiceURI === reglages.voix ? reglages.voix : "";
-    // Conseil affiché seulement si l'appareil n'a aucune voix de qualité.
-    document.getElementById("conseil-voix").hidden =
-      !synthese || voix.some(function (v) { return qualiteVoix(v) > 0; });
   }
 
   choixVoixEl.addEventListener("change", function () {
@@ -407,20 +466,28 @@
     dire("Bonjour ! a, bé, cé.");
   });
 
-  // État de la voix (pour le parent : savoir pourquoi il n'y aurait pas de son).
+  // État de la voix (pour le parent : savoir pourquoi il n'y aurait pas de
+  // son). Le choix de la voix de l'appareil n'est montré que si les sons
+  // enregistrés manquent.
   function afficherEtatVoix() {
     var el = document.getElementById("etat-voix");
-    if (!synthese) {
-      el.textContent = "Voix de l'appareil : indisponible dans ce navigateur.";
-      return;
-    }
-    el.textContent = voixFrancaises().length + " voix française(s) · " +
-      (voixDebloquee ? "activée" : "pas encore activée") +
-      (reglages.sonActif ? "" : " · son coupé dans les réglages");
+    chargerSon(SONS.lettre("a")).then(function (enregistres) {
+      document.getElementById("voix-appareil").hidden = !!enregistres;
+      if (!enregistres) remplirChoixVoix();
+      var etat;
+      if (enregistres) etat = "Sons enregistrés";
+      else if (synthese) etat = "Voix de l'appareil · " + voixFrancaises().length + " voix française(s)";
+      else etat = "Voix de l'appareil : indisponible dans ce navigateur";
+      el.textContent = etat + " · " + (voixDebloquee ? "activée" : "pas encore activée") +
+        (reglages.sonActif ? "" : " · son coupé dans les réglages");
+    });
   }
 
   document.getElementById("btn-tester-voix").addEventListener("click", function () {
-    dire("Bonjour ! a, bé, cé.");
+    chargerSon(SONS.bravo).then(function (enregistre) {
+      if (enregistre) jouerSon(SONS.bravo);
+      else dire("Bonjour ! a, bé, cé.");
+    });
     setTimeout(afficherEtatVoix, 300);
   });
 
@@ -503,12 +570,14 @@
     bandeLettresEl.classList.remove("parle");
     void bandeLettresEl.offsetWidth;
     bandeLettresEl.classList.add("parle");
-    dire(syllabe);
+    jouerSon(SONS.syllabe(syllabe));
   }
 
   function programmerLecture() {
     clearTimeout(timerLecture);
-    if (!syllabeFinale()) return;
+    var syllabe = syllabeFinale();
+    if (!syllabe) return;
+    chargerSon(SONS.syllabe(syllabe)); // prêt pour la fin de la pause
     timerLecture = setTimeout(lireBande, DELAI_LECTURE);
   }
 
@@ -626,9 +695,10 @@
 
   function demarrerNouveauMot() {
     annulerTimersMots();
-    if (synthese) synthese.cancel();
+    arreterParole();
     motActuel = choisirMotAleatoire();
     if (!motActuel) return;
+    chargerSon(SONS.mot(motActuel));
     derniersMots.push(motActuel.mot);
     if (derniersMots.length > 5) derniersMots.shift();
     positionActuelle = 0;
@@ -817,11 +887,14 @@
   // interrompue par l'arrière-plan peut bloquer la synthèse vocale).
   // ==================================================================
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden" && synthese) synthese.cancel();
+    if (document.visibilityState === "hidden") arreterParole();
   });
 
   // ==================================================================
   // Initialisation
   // ==================================================================
   afficherEcran("accueil");
+  // Lettres et « Bravo » prêts tout de suite ; syllabes et mots à la demande.
+  SONS.lettres.forEach(function (l) { chargerSon(SONS.lettre(l)); });
+  chargerSon(SONS.bravo);
 })();
