@@ -1,4 +1,4 @@
-// ===================== ABC — app.js =====================
+// ===================== Kiddo — app.js =====================
 // Application unique, sans framework, sans build. Toutes les routes sont
 // gérées en montrant/masquant des <section>. Tout est en français.
 
@@ -350,6 +350,10 @@
   });
   document.getElementById("btn-go-mots").addEventListener("click", function () {
     afficherEcran("mots");
+  });
+  document.getElementById("btn-go-dessin").addEventListener("click", function () {
+    // L'app Dessin vit dans le dépôt voisin, servi côte à côte (../draw/).
+    window.location.href = "../draw/";
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-home]"), function (btn) {
     btn.addEventListener("click", function () {

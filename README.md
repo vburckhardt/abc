@@ -1,9 +1,11 @@
-# ABC
+# Kiddo
 
-Petite application web hors ligne pour apprendre les lettres et les mots,
+Petite application web hors ligne pour apprendre et jouer,
 pensée pour les 4-5 ans. Pas de dépendance, pas de build, pas de ressource
 externe : du HTML/CSS/JS simple. Faite pour l'iPhone (écran d'accueil),
 utilisable aussi sur ordinateur avec un vrai clavier.
+
+L'accueil propose trois activités :
 
 - **Lettres** : clavier A–Z ; chaque lettre s'affiche en grand et dit son
   nom. Si ce qui est tapé se termine par une syllabe valide (« MA »,
@@ -11,6 +13,9 @@ utilisable aussi sur ordinateur avec un vrai clavier.
   n'est lu. Un mot de la liste tapé en entier s'affiche avec son image.
 - **Mots** : une image et un mot à recopier ; la touche suivante brille,
   chaque bonne lettre dit son nom, le mot est lu à la fin, puis « Bravo ! ».
+- **Dessin** : ouvre l'app de dessin [draw](https://github.com/vburckhardt/draw),
+  servie côte à côte (`../draw/` — les deux dépôts sont publiés sur
+  `vburckhardt.github.io/abc/` et `vburckhardt.github.io/draw/`).
 - **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil) :
   catégories de mots, son, choix de la voix.
 

@@ -1,7 +1,7 @@
 {
-  "name": "ABC",
-  "short_name": "ABC",
-  "description": "Apprendre les lettres et les mots en s'amusant",
+  "name": "Kiddo",
+  "short_name": "Kiddo",
+  "description": "Apprendre et dessiner en s'amusant",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
