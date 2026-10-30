@@ -59,6 +59,16 @@ numéro est affiché en bas de l'accueil (✓ = identique au serveur). En
 ligne, l'app charge toujours la dernière version ; hors ligne, elle utilise
 la copie en cache (`sw.js`). Tous les chemins sont relatifs (`./…`).
 
+## Déploiement (GitHub Pages)
+
+Le site est publié sur **https://vburckhardt.github.io/abc/**. Le workflow
+`.github/workflows/preview.yml` (copié de l'app Dessin) déploie `main` en
+production et **chaque PR en aperçu** : la page de déploiement du run
+indique l'URL de l'aperçu, et fermer la PR redéploie `main`. Il estampille
+`build.json` (branche, commit, date, `preview: true/false`) — le HUD debug
+l'affiche en haut. La source Pages du dépôt doit être **« GitHub Actions »**
+(Settings → Pages → Build and deployment → Source), comme pour `draw`.
+
 ## Ajouter des mots
 
 Dans `words.js` : `{ mot: "ÉCOLE", emoji: "🏫" }` (`famille: true` pour la
