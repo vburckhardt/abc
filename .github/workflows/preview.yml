@@ -1,0 +1,52 @@
+name: Preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+# NOTE: abc's Pages source is still the legacy branch deploy (build_type=legacy),
+# so the github-pages environment is not used here and PR refs are allowed.
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' && github.event.pull_request.head.sha || 'main' }}
+      - name: Stamp build info
+        run: |
+          cat > build.json <<EOF
+          {
+            "branch": "${BRANCH}",
+            "commit": "${SHA}",
+            "time": "${TIME}",
+            "preview": ${PREVIEW}
+          }
+          EOF
+        env:
+          BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || 'main' }}
+          SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          TIME: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}
+          PREVIEW: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

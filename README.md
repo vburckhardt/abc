@@ -1,9 +1,11 @@
-# ABC
+# Youpi
 
-Petite application web hors ligne pour apprendre les lettres et les mots,
+Petite application web hors ligne pour apprendre et jouer,
 pensée pour les 4-5 ans. Pas de dépendance, pas de build, pas de ressource
 externe : du HTML/CSS/JS simple. Faite pour l'iPhone (écran d'accueil),
 utilisable aussi sur ordinateur avec un vrai clavier.
+
+L'accueil propose trois activités :
 
 - **Lettres** : clavier A–Z ; chaque lettre s'affiche en grand et dit son
   nom. Si ce qui est tapé se termine par une syllabe valide (« MA »,
@@ -11,8 +13,23 @@ utilisable aussi sur ordinateur avec un vrai clavier.
   n'est lu. Un mot de la liste tapé en entier s'affiche avec son image.
 - **Mots** : une image et un mot à recopier ; la touche suivante brille,
   chaque bonne lettre dit son nom, le mot est lu à la fin, puis « Bravo ! ».
+- **Dessin** : ouvre l'app de dessin [draw](https://github.com/vburckhardt/draw),
+  servie côte à côte (`../draw/` — les deux dépôts sont publiés sur
+  `vburckhardt.github.io/abc/` et `vburckhardt.github.io/draw/`).
 - **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil) :
   catégories de mots, son, choix de la voix.
+
+## Mode debug (comme dans l'app Dessin)
+
+Caché, sans bouton : taper **« dev »** au clavier, ouvrir **#dev**, ou toucher
+l'écran avec **4 doigts** affiche un HUD (version locale vs serveur, fps,
+écran courant, bande de lettres, état du service worker…). Le choix est
+mémorisé (`localStorage`). Taper « dev » retire aussi les lettres d-e-v de
+l'écran Lettres. En quittant #dev, le HUD se ferme.
+
+Quand une nouvelle version est installée par le service worker, la page ne
+se recharge automatiquement que si l'accueil est affiché (rien en cours) ;
+sinon la mention « nouvelle version … en cours » en bas de l'accueil suffit.
 
 ## Voix
 
@@ -41,6 +58,16 @@ Enregistrer les sons, sur un Mac :
 numéro est affiché en bas de l'accueil (✓ = identique au serveur). En
 ligne, l'app charge toujours la dernière version ; hors ligne, elle utilise
 la copie en cache (`sw.js`). Tous les chemins sont relatifs (`./…`).
+
+## Déploiement (GitHub Pages)
+
+Le site est publié sur **https://vburckhardt.github.io/abc/**. Le workflow
+`.github/workflows/preview.yml` (copié de l'app Dessin) déploie `main` en
+production et **chaque PR en aperçu** : la page de déploiement du run
+indique l'URL de l'aperçu, et fermer la PR redéploie `main`. Il estampille
+`build.json` (branche, commit, date, `preview: true/false`) — le HUD debug
+l'affiche en haut. La source Pages du dépôt doit être **« GitHub Actions »**
+(Settings → Pages → Build and deployment → Source), comme pour `draw`.
 
 ## Ajouter des mots
 
