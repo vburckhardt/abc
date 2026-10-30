@@ -872,6 +872,12 @@
   // ==================================================================
   var versionLocale = window.APP_VERSION || "?";
   var versionServeurConnue = null;
+  // Stampé par le workflow Pages (build.json) : branche/commit du déploiement.
+  var build = { branch: "?", commit: "?", time: "?", preview: false };
+  fetch("./build.json", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j) build = j; })
+    .catch(function () {});
   var versionEl = document.getElementById("version-app");
 
   function afficherVersion(versionServeur) {
@@ -932,6 +938,8 @@
     var fps = devFrames;
     devFrames = 0;
     hud.textContent =
+      "build      " + build.branch + " @ " + String(build.commit).slice(0, 8) + "\n" +
+      "built      " + build.time + (build.preview ? " (preview)" : "") + "\n" +
       "version    " + versionLocale + (versionServeurConnue ? " (serveur " + versionServeurConnue + ")" : "") + "\n" +
       "fps        " + fps + "\n" +
       "écran      " + ecranCourant + "\n" +

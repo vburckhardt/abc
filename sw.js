@@ -22,7 +22,8 @@ const FICHIERS_APP = [
   "./manifest.webmanifest",
   "./icon-180.png",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./build.json" // stampé par le workflow Pages (absent en local : ignoré)
 ];
 
 self.addEventListener("install", function (event) {
