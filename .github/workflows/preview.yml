@@ -7,6 +7,9 @@ on:
     types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
+# NOTE: abc's Pages source is still the legacy branch deploy (build_type=legacy),
+# so the github-pages environment is not used here and PR refs are allowed.
+
 permissions:
   contents: read
   pages: write
