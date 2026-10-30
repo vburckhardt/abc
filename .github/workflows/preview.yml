@@ -19,12 +19,12 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.event_name == 'pull_request' && 'github-pages-preview' || 'github-pages' }}
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request && github.event.pull_request.head.sha || github.sha }}
+          ref: main
       - name: Stamp build info
         run: |
           cat > build.json <<EOF
