@@ -1,4 +1,4 @@
-# Kiddo
+# Youpi
 
 Petite application web hors ligne pour apprendre et jouer,
 pensée pour les 4-5 ans. Pas de dépendance, pas de build, pas de ressource

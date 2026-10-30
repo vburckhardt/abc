@@ -1,10 +1,10 @@
-// ===================== Kiddo — Service Worker =====================
+// ===================== Youpi — Service Worker =====================
 // Hors ligne complet une fois installé. En ligne, les fichiers viennent
 // toujours du serveur (le cache ne sert que hors ligne, ou si le réseau ne
 // répond pas en 4 s). Le numéro de version est dans version.js : à augmenter
 // à chaque mise à jour.
 importScripts("./version.js");
-const CACHE_NAME = "kiddo-v" + self.APP_VERSION;
+const CACHE_NAME = "youpi-v" + self.APP_VERSION;
 // Sons enregistrés (audio/…) : cache à part, gardé d'une version à l'autre
 // (le nom historique est conservé pour ne pas retélécharger les sons).
 const CACHE_SONS = "abc-sons";

@@ -1,4 +1,4 @@
-// ===================== Kiddo — app.js =====================
+// ===================== Youpi — app.js =====================
 // Application unique, sans framework, sans build. Toutes les routes sont
 // gérées en montrant/masquant des <section>. Tout est en français.
 
