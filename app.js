@@ -330,8 +330,10 @@
     mots: document.getElementById("screen-mots")
   };
   var overlayReglages = document.getElementById("overlay-reglages");
+  var ecranCourant = "accueil";
 
   function afficherEcran(nom) {
+    ecranCourant = nom;
     Object.keys(ecrans).forEach(function (k) {
       ecrans[k].classList.toggle("ecran-actif-masque", k !== nom);
     });
@@ -597,6 +599,7 @@
   }
 
   function surToucheLettres(l) {
+    devTouches++;
     if (l === "BACKSPACE") {
       bandeLettres = bandeLettres.slice(0, -1);
       bandeLettresEl.textContent = bandeLettres;
@@ -790,6 +793,13 @@
     // Ignore les raccourcis avec modificateurs.
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
+    // Lettres tapées par la détection de « dev » : on les avale.
+    if (devAvale > 0 && /^[a-zA-Z]$/.test(e.key)) {
+      devAvale--;
+      e.preventDefault();
+      return;
+    }
+
     var ecranLettresVisible = !ecrans.lettres.classList.contains("ecran-actif-masque");
     var ecranMotsVisible = !ecrans.mots.classList.contains("ecran-actif-masque");
     var reglagesOuverts = !overlayReglages.classList.contains("ecran-actif-masque");
@@ -843,10 +853,12 @@
     var avaitUnControleur = !!navigator.serviceWorker.controller;
     var rechargee = false;
     navigator.serviceWorker.addEventListener("controllerchange", function () {
-      // Première installation : rien à recharger.
+      // Première installation : rien à recharger. Comme dans l'app Dessin, on
+      // ne recharge que si l'accueil est affiché (rien en cours à perdre) ;
+      // sinon la bannière « nouvelle version » sur l'accueil suffit.
       if (!avaitUnControleur || rechargee) return;
       rechargee = true;
-      location.reload();
+      if (ecranCourant === "accueil") location.reload();
     });
     window.addEventListener("load", function () {
       navigator.serviceWorker.register("./sw.js").then(function (reg) {
@@ -859,6 +871,7 @@
   // NUMÉRO DE VERSION (accueil) + comparaison avec le serveur
   // ==================================================================
   var versionLocale = window.APP_VERSION || "?";
+  var versionServeurConnue = null;
   var versionEl = document.getElementById("version-app");
 
   function afficherVersion(versionServeur) {
@@ -880,7 +893,8 @@
       .then(function (r) { return r.ok ? r.text() : ""; })
       .then(function (txt) {
         var m = /APP_VERSION\s*=\s*"([^"]+)"/.exec(txt);
-        afficherVersion(m ? m[1] : null);
+        versionServeurConnue = m ? m[1] : null;
+        afficherVersion(versionServeurConnue);
       })
       .catch(function () {});
   }
@@ -893,6 +907,89 @@
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") arreterParole();
   });
+
+  // ==================================================================
+  // MODE DEBUG CACHÉ (comme dans l'app Dessin)
+  // Tapez « dev » au clavier, ouvrez #dev, ou touchez l'écran avec 4 doigts :
+  // un HUD affiche les infos internes. Aucun bouton, invisible pour l'enfant.
+  // ==================================================================
+  var dev = false;
+  var devFrames = 0;
+  var devTouches = 0;
+  var hud = document.createElement("pre");
+  hud.id = "devhud";
+  hud.hidden = true;
+  document.body.appendChild(hud);
+
+  function devTick() {
+    if (!dev) return;
+    devFrames++;
+    requestAnimationFrame(devTick);
+  }
+
+  setInterval(function () {
+    if (!dev) return;
+    var fps = devFrames;
+    devFrames = 0;
+    hud.textContent =
+      "version    " + versionLocale + (versionServeurConnue ? " (serveur " + versionServeurConnue + ")" : "") + "\n" +
+      "fps        " + fps + "\n" +
+      "écran      " + ecranCourant + "\n" +
+      "bande      " + (bandeLettres || "—") + "\n" +
+      "touches    " + devTouches + "\n" +
+      "worker     " + (navigator.serviceWorker && navigator.serviceWorker.controller ? "actif" : "aucun") + "\n" +
+      "online     " + navigator.onLine + "\n" +
+      "viewport   " + window.innerWidth + "x" + window.innerHeight;
+  }, 500);
+
+  function setDev(on) {
+    dev = on;
+    hud.hidden = !on;
+    try { localStorage.setItem("youpi-dev", on ? "1" : "0"); } catch (_) {}
+    if (on) { devFrames = 0; requestAnimationFrame(devTick); }
+  }
+
+  // Taper « dev » tape aussi d-e-v dans l'écran Lettres : quand la séquence est
+  // reconnue, on retire les 2 lettres déjà tapées (d, e) et on avale la
+  // courante (v), comme l'app Dessin retire les lettres tapées.
+  var devBuf = [];
+  var devAvale = 0;
+  window.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!/^[a-z]$/i.test(e.key)) return;
+    devBuf.push(e.key.toLowerCase());
+    if (devBuf.length > 3) devBuf.shift();
+    if (devBuf.join("") !== "dev") return;
+    devBuf.length = 0;
+    bandeLettres = bandeLettres.slice(0, Math.max(0, bandeLettres.length - 2));
+    bandeLettresEl.textContent = bandeLettres;
+    devAvale = 1;
+    setDev(!dev);
+  }, true);
+
+  // #dev affiche le HUD ; quitter #dev (hash vide ou autre) le masque.
+  if (location.hash === "#dev") setDev(true);
+  window.addEventListener("hashchange", function () {
+    setDev(location.hash === "#dev");
+  });
+
+  // Quatre doigts sur l'écran en même temps : le seul moyen de basculer sur
+  // téléphone. CDP envoie les doigts un par un (1,2,3,4) : on attend que le
+  // compteur atteigne 4 dans la même rafale.
+  var devDoigts = 0;
+  var devDoigtsTimer = null;
+  document.addEventListener("touchstart", function (e) {
+    devDoigts = Math.max(devDoigts, e.touches.length);
+    clearTimeout(devDoigtsTimer);
+    devDoigtsTimer = setTimeout(function () { devDoigts = 0; }, 350);
+    if (devDoigts >= 4) {
+      devDoigts = 0;
+      clearTimeout(devDoigtsTimer);
+      setDev(!dev);
+    }
+  }, { passive: true });
+
+  try { if (localStorage.getItem("youpi-dev") === "1") setDev(true); } catch (_) {}
 
   // ==================================================================
   // Initialisation

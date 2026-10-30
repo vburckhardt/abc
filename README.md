@@ -19,6 +19,18 @@ L'accueil propose trois activités :
 - **Réglages** : appui long de 2 s sur ⚙️ (en bas de l'accueil) :
   catégories de mots, son, choix de la voix.
 
+## Mode debug (comme dans l'app Dessin)
+
+Caché, sans bouton : taper **« dev »** au clavier, ouvrir **#dev**, ou toucher
+l'écran avec **4 doigts** affiche un HUD (version locale vs serveur, fps,
+écran courant, bande de lettres, état du service worker…). Le choix est
+mémorisé (`localStorage`). Taper « dev » retire aussi les lettres d-e-v de
+l'écran Lettres. En quittant #dev, le HUD se ferme.
+
+Quand une nouvelle version est installée par le service worker, la page ne
+se recharge automatiquement que si l'accueil est affiché (rien en cours) ;
+sinon la mention « nouvelle version … en cours » en bas de l'accueil suffit.
+
 ## Voix
 
 Tout ce que dit l'app (noms des lettres, syllabes, mots, « Bravo ! ») est

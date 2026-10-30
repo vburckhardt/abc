@@ -575,3 +575,22 @@ a { color: inherit; }
   border: 2px solid var(--creme-fonce);
   border-radius: 12px;
 }
+
+/* ===================== HUD debug caché (comme dans l'app Dessin) ===================== */
+/* Visible uniquement avec #dev, en tapant « dev » ou 4 doigts sur l'écran. */
+#devhud {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 9999;
+  margin: 0;
+  padding: 10px 12px;
+  font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #0f0;
+  background: rgba(0, 0, 0, .78);
+  border-radius: 8px;
+  pointer-events: none;
+  white-space: pre;
+}
+
+#devhud[hidden] { display: none; }
