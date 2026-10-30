@@ -46,3 +46,4 @@ jobs:
           path: .
       - id: deployment
         uses: actions/deploy-pages@v4
+  workflow_dispatch:
